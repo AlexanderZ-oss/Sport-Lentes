@@ -1,24 +1,36 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 
+// Config secured with environment variables
 const firebaseConfig = {
-    apiKey: "AIzaSyD919E0yEkLag7pPVlHKbsLa_t2In_1rWA",
-    authDomain: "sport-lentes.firebaseapp.com",
-    projectId: "sport-lentes",
-    storageBucket: "sport-lentes.firebasestorage.app",
-    messagingSenderId: "14743594608",
-    appId: "1:14743594608:web:6d976daebed149247436b5",
-    measurementId: "G-EN715EQMMP"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
 
 // Initialize Services
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const analytics = getAnalytics(app);
+
+// Enable Offline Persistence for extreme speed
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+        // Multiple tabs open, persistence can only be enabled in one tab at a time.
+        console.warn("Persistence failed: Multiple tabs open.");
+    } else if (err.code === 'unimplemented') {
+        // The current browser does not support all of the features required to enable persistence
+        console.warn("Persistence is not available in this browser.");
+    }
+});
 
 export default app;

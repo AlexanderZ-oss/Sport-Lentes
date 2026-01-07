@@ -69,7 +69,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [products, setProducts] = useState<Product[]>([]);
     const [sales, setSales] = useState<Sale[]>([]);
     const [logs, setLogs] = useState<ActivityLog[]>([]);
-    const [isOnline, setIsOnline] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
     const [config, setConfig] = useState<Config>({
         ruc: '20601234567',
         address: 'Av. Principal 123, Ciudad',
@@ -85,10 +85,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...doc.data()
             } as Product));
             setProducts(prods);
-            setIsOnline(!snapshot.metadata.fromCache || prods.length > 0);
+
+            if (snapshot.metadata.fromCache) {
+                setConnectionStatus('syncing');
+            } else {
+                setConnectionStatus('online');
+            }
         }, (error) => {
             console.error("Firestore error (Products):", error);
-            setIsOnline(false);
+            setConnectionStatus('offline');
         });
 
         const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
@@ -231,6 +236,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const getStatusStyles = () => {
+        switch (connectionStatus) {
+            case 'online': return { bg: 'rgba(0, 255, 0, 0.1)', color: '#44ff44', text: '● NUBE EN LÍNEA', border: 'rgba(0, 255, 0, 0.2)' };
+            case 'syncing': return { bg: 'rgba(0, 229, 255, 0.1)', color: 'var(--primary)', text: '○ SINCRONIZANDO...', border: 'rgba(0, 229, 255, 0.2)' };
+            case 'offline': return { bg: 'rgba(255, 0, 0, 0.1)', color: '#ff4444', text: '✖ ERROR DE RED', border: 'rgba(255, 0, 0, 0.2)' };
+        }
+    };
+
+    const styles = getStatusStyles();
+
     return (
         <DataContext.Provider value={{ products, sales, logs, config, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
             <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none' }}>
@@ -239,12 +254,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     borderRadius: '20px',
                     fontSize: '0.7rem',
                     fontWeight: 'bold',
-                    background: isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
-                    color: isOnline ? '#44ff44' : '#ff4444',
-                    border: `1px solid ${isOnline ? 'rgba(0, 255, 0, 0.2)' : 'rgba(255, 0, 0, 0.2)'}`,
-                    backdropFilter: 'blur(5px)'
+                    background: styles.bg,
+                    color: styles.color,
+                    border: `1px solid ${styles.border}`,
+                    backdropFilter: 'blur(5px)',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
                 }}>
-                    {isOnline ? '● NUBE CONECTADA' : '○ BUSCANDO NUBE...'}
+                    {styles.text}
                 </div>
             </div>
             {children}
