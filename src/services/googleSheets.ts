@@ -8,7 +8,7 @@ export interface SheetSaleData {
     paymentType: string;
 }
 
-export const GOOGLE_SHEET_URL = ""; // Usuario debe pegar su URL aquí
+export const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxka8uYWlGNdv0H-mbJeFk7Bcja-E6YIsg9TmDMrmnXkRfsk8AnPYOalc5moCzb63d-iw/exec";
 
 export const saveToGoogleSheets = async (data: SheetSaleData) => {
     if (!GOOGLE_SHEET_URL) {
