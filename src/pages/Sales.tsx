@@ -19,6 +19,7 @@ const Sales: React.FC = () => {
     const [saleType, setSaleType] = useState<'unit' | 'wholesale'>('unit');
     const [discount, setDiscount] = useState<number>(0);
     const [showScanner, setShowScanner] = useState(false);
+    const [isCartVisible, setIsCartVisible] = useState(false); // For mobile cart toggle
 
     const [applyIgv, setApplyIgv] = useState(true);
 
@@ -39,7 +40,7 @@ const Sales: React.FC = () => {
         }
 
         const quantityToAdd = saleType === 'wholesale' ? 12 : 1;
-        const priceToUse = saleType === 'wholesale' ? product.price * 0.8 : product.price; // 20% discount for wholesale
+        const priceToUse = saleType === 'wholesale' ? product.price * 0.8 : product.price;
 
         const existing = cart.find(item => item.product.id === product.id);
         if (existing) {
@@ -57,14 +58,18 @@ const Sales: React.FC = () => {
         }
     };
 
-    // ...
-
-    const calculateTotal = () => {
-        const subtotal = cart.reduce((total, item) => total + ((item.price || item.product.price) * item.quantity), 0);
-        return subtotal - discount;
+    const calculateSubtotal = () => {
+        return cart.reduce((total, item) => total + ((item.price || item.product.price) * item.quantity), 0);
     };
 
-    // ...
+    const calculateTotal = () => {
+        return calculateSubtotal() - discount;
+    };
+
+    const handleTotalChange = (newTotal: number) => {
+        const subtotal = calculateSubtotal();
+        setDiscount(subtotal - newTotal);
+    };
 
     const removeFromCart = (productId: string) => {
         setCart(cart.filter(item => item.product.id !== productId));
@@ -113,13 +118,16 @@ const Sales: React.FC = () => {
         };
 
         try {
+            console.log("Intentando procesar venta:", saleData);
             await addSale(saleData, user?.name || 'Vendedor');
             setLastSale({ ...saleData, id: Math.random().toString(36).substr(2, 9) });
             setCart([]);
             setShowReceipt(true);
-        } catch (error) {
-            alert("⚠️ ERROR AL PROCESAR VENTA: No se pudo guardar en la nube. Verifica tu conexión.");
-            console.error(error);
+            setIsCartVisible(false);
+            setDiscount(0); // Reset discount for next sale
+        } catch (error: any) {
+            console.error("Detalle del error en venta:", error);
+            alert(`⚠️ ERROR AL PROCESAR VENTA: ${error.message || 'No se pudo guardar en la nube'}. Verifica tu conexión.`);
         }
     };
 
@@ -205,19 +213,48 @@ const Sales: React.FC = () => {
         doc.save(`Boleta_${lastSale.id}.pdf`);
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.code.includes(searchTerm)
-    );
+    const isMobile = window.innerWidth <= 768;
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '2rem', position: 'relative' }}>
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 350px',
+            gap: isMobile ? '1rem' : '2rem',
+            position: 'relative'
+        }}>
+            {/* Mobile Checkout Bar */}
+            {isMobile && cart.length > 0 && (
+                <button
+                    onClick={() => setIsCartVisible(true)}
+                    className="btn-primary"
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        left: '20px',
+                        right: '20px',
+                        zIndex: 1000,
+                        padding: '1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                        borderRadius: '15px'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <span style={{ fontSize: '1.5rem' }}>🛒</span>
+                        <span>{cart.length} productos</span>
+                    </div>
+                    <span style={{ fontWeight: '800', fontSize: '1.2rem' }}>S/ {calculateTotal().toFixed(2)}</span>
+                </button>
+            )}
+
             {showScanner && (
                 <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
             )}
 
             <div style={{ minWidth: 0 }}>
-                {/* Search and Barcode */}
+                {/* Search and Barcode row */}
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
                         <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
@@ -229,7 +266,7 @@ const Sales: React.FC = () => {
                             style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '12px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white' }}
                         />
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto' }}>
                         <button
                             onClick={() => {
                                 setEditingConfig(config);
@@ -241,7 +278,7 @@ const Sales: React.FC = () => {
                         >
                             ⚙️
                         </button>
-                        <form onSubmit={handleBarcodeSubmit} style={{ position: 'relative', width: '200px' }}>
+                        <form onSubmit={handleBarcodeSubmit} style={{ position: 'relative', flex: 1 }}>
                             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>🏷️</span>
                             <input
                                 type="text"
@@ -272,23 +309,23 @@ const Sales: React.FC = () => {
                 </div>
 
                 {/* Product Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                    {filteredProducts.map(product => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: isMobile ? '0.8rem' : '1.5rem' }}>
+                    {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.includes(searchTerm)).map(product => (
                         <div key={product.id} className="glass-card product-card" style={{ padding: '0', display: 'flex', flexDirection: 'column', overflow: 'hidden', textAlign: 'center', transition: '0.3s' }}>
-                            <div style={{ height: '150px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ height: isMobile ? '120px' : '150px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 {product.image ? (
                                     <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                    <div style={{ fontSize: '3rem' }}>🕶️</div>
+                                    <div style={{ fontSize: '2.5rem' }}>🕶️</div>
                                 )}
                             </div>
 
-                            <div style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                <h4 style={{ marginBottom: '0.5rem', height: '2.5rem', overflow: 'hidden', fontSize: '1rem' }}>{product.name}</h4>
+                            <div style={{ padding: '0.8rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                <h4 style={{ marginBottom: '0.4rem', height: '2.5rem', overflow: 'hidden', fontSize: '0.9rem' }}>{product.name}</h4>
                                 <div style={{ marginBottom: 'auto' }}>
-                                    <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.3rem' }}>S/ {product.price}</span>
+                                    <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem' }}>S/ {product.price}</span>
                                 </div>
-                                <div style={{ fontSize: '0.8rem', margin: '0.8rem 0' }}>
+                                <div style={{ fontSize: '0.75rem', margin: '0.5rem 0' }}>
                                     <span style={{
                                         padding: '2px 8px',
                                         borderRadius: '12px',
@@ -304,10 +341,11 @@ const Sales: React.FC = () => {
                                     className={product.stock <= 0 ? '' : 'btn-primary'}
                                     style={{
                                         width: '100%',
-                                        padding: '10px',
+                                        padding: '8px',
                                         borderRadius: '8px',
                                         background: product.stock <= 0 ? '#444' : undefined,
-                                        color: 'white'
+                                        color: 'white',
+                                        fontSize: '0.85rem'
                                     }}
                                 >
                                     {product.stock <= 0 ? 'Agotado' : 'Agregar'}
@@ -318,11 +356,30 @@ const Sales: React.FC = () => {
                 </div>
             </div>
 
-            {/* Cart / Summary */}
-            <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', position: 'sticky', top: '20px' }}>
-                <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>🛒</span> Carrito
-                </h3>
+            {/* Cart / Summary - Responsive Sidebar/Overlay */}
+            <div className={`glass-card ${isMobile ? (isCartVisible ? 'cart-visible' : 'cart-hidden') : ''}`} style={{
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                height: isMobile ? '100vh' : 'calc(100vh - 100px)',
+                position: isMobile ? 'fixed' : 'sticky',
+                top: isMobile ? 0 : '20px',
+                right: isMobile ? 0 : 'auto',
+                left: isMobile ? 0 : 'auto',
+                zIndex: isMobile ? 3000 : 100,
+                borderRadius: isMobile ? 0 : '24px',
+                transition: '0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: isMobile && !isCartVisible ? 'translateX(100%)' : 'translateX(0)',
+                visibility: isMobile && !isCartVisible ? 'hidden' : 'visible'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>🛒</span> Carrito
+                    </h3>
+                    {isMobile && (
+                        <button onClick={() => setIsCartVisible(false)} style={{ background: 'transparent', fontSize: '1.5rem', color: 'white' }}>✕</button>
+                    )}
+                </div>
 
                 {/* Sale Type & Discount Controls */}
                 <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
@@ -448,9 +505,27 @@ const Sales: React.FC = () => {
                             </div>
                         </>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.5rem', fontWeight: '800', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.5rem', fontWeight: '800', marginBottom: '1.5rem', alignItems: 'center' }}>
                         <span>Total:</span>
-                        <span style={{ color: 'var(--primary)' }}>S/ {calculateTotal().toFixed(2)}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <span style={{ color: 'var(--primary)' }}>S/</span>
+                            <input
+                                type="number"
+                                value={calculateTotal().toFixed(2)}
+                                onChange={(e) => handleTotalChange(Number(e.target.value))}
+                                style={{
+                                    width: '120px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderBottom: '2px solid var(--primary)',
+                                    color: 'var(--primary)',
+                                    fontSize: '1.5rem',
+                                    fontWeight: '800',
+                                    textAlign: 'right',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
                     </div>
                     <button
                         onClick={handleFinalizeSale}
@@ -458,7 +533,7 @@ const Sales: React.FC = () => {
                         className="btn-primary"
                         style={{ width: '100%', padding: '18px', fontSize: '1.2rem', borderRadius: '12px', boxShadow: '0 10px 20px rgba(255, 107, 0, 0.3)' }}
                     >
-                        PAGAR
+                        PAGAR VENTAS
                     </button>
                 </div>
             </div>

@@ -15,6 +15,7 @@ const Dashboard: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'inventory' | 'sales' | 'reports' | 'users' | 'monitoring'>('sales');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     if (!user) {
         return null;
@@ -23,6 +24,11 @@ const Dashboard: React.FC = () => {
     const handleLogout = () => {
         logout();
         navigate('/');
+    };
+
+    const handleTabChange = (tab: any) => {
+        setActiveTab(tab);
+        setIsMenuOpen(false);
     };
 
     // Safety wrapper to prevent one module from crashing the whole dashboard
@@ -46,8 +52,32 @@ const Dashboard: React.FC = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
-            {/* Sidebar */}
+        <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', overflow: 'hidden', flexDirection: 'row' }}>
+            {/* Mobile Header (Only visible on small screens) */}
+            <header className="mobile-only" style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '70px',
+                background: 'var(--surface)',
+                borderBottom: '1px solid var(--glass-border)',
+                zIndex: 2000,
+                padding: '0 1.5rem',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            }}>
+                <Logo size={32} showText={true} />
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    style={{ background: 'transparent', fontSize: '1.8rem', color: 'white' }}
+                >
+                    {isMenuOpen ? '✕' : '☰'}
+                </button>
+            </header>
+
+            {/* Sidebar / Mobile Menu Overlay */}
             <aside style={{
                 width: '280px',
                 minWidth: '280px',
@@ -57,17 +87,25 @@ const Dashboard: React.FC = () => {
                 flexDirection: 'column',
                 borderRight: '1px solid var(--glass-border)',
                 boxShadow: '10px 0 30px rgba(0,0,0,0.5)',
-                position: 'relative',
-                zIndex: 10
+                position: window.innerWidth <= 768 ? 'fixed' : 'relative',
+                left: window.innerWidth <= 768 ? (isMenuOpen ? '0' : '-280px') : '0',
+                top: 0,
+                bottom: 0,
+                zIndex: 2100,
+                transition: '0.3s ease',
             }}>
-                <div style={{ marginBottom: '3rem', paddingLeft: '10px' }}>
+                <div style={{ marginBottom: '3rem', paddingLeft: '10px' }} className="desktop-only">
+                    <Logo size={42} showText={true} />
+                </div>
+
+                <div className="mobile-only" style={{ marginBottom: '2rem', textAlign: 'center' }}>
                     <Logo size={42} showText={true} />
                 </div>
 
                 <nav style={{ flex: 1 }}>
                     <ul style={{ listStyle: 'none' }}>
                         <li
-                            onClick={() => setActiveTab('sales')}
+                            onClick={() => handleTabChange('sales')}
                             style={{
                                 padding: '15px 20px',
                                 borderRadius: '12px',
@@ -77,15 +115,15 @@ const Dashboard: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '12px',
                                 background: activeTab === 'sales' ? 'var(--primary)' : 'transparent',
-                                color: activeTab === 'sales' ? 'white' : 'var(--text-muted)',
+                                color: activeTab === 'sales' ? 'black' : 'var(--text-muted)',
                                 transition: '0.3s',
-                                fontWeight: '600'
+                                fontWeight: '700'
                             }}
                         >
                             <span style={{ fontSize: '1.4rem' }}>🛒</span> Ventas
                         </li>
                         <li
-                            onClick={() => setActiveTab('inventory')}
+                            onClick={() => handleTabChange('inventory')}
                             style={{
                                 padding: '15px 20px',
                                 borderRadius: '12px',
@@ -95,9 +133,9 @@ const Dashboard: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '12px',
                                 background: activeTab === 'inventory' ? 'var(--primary)' : 'transparent',
-                                color: activeTab === 'inventory' ? 'white' : 'var(--text-muted)',
+                                color: activeTab === 'inventory' ? 'black' : 'var(--text-muted)',
                                 transition: '0.3s',
-                                fontWeight: '600'
+                                fontWeight: '700'
                             }}
                         >
                             <span style={{ fontSize: '1.4rem' }}>📦</span> Inventario
@@ -106,7 +144,7 @@ const Dashboard: React.FC = () => {
                         {user.role === 'admin' && (
                             <>
                                 <li
-                                    onClick={() => setActiveTab('reports')}
+                                    onClick={() => handleTabChange('reports')}
                                     style={{
                                         padding: '15px 20px',
                                         borderRadius: '12px',
@@ -116,15 +154,15 @@ const Dashboard: React.FC = () => {
                                         alignItems: 'center',
                                         gap: '12px',
                                         background: activeTab === 'reports' ? 'var(--primary)' : 'transparent',
-                                        color: activeTab === 'reports' ? 'white' : 'var(--text-muted)',
+                                        color: activeTab === 'reports' ? 'black' : 'var(--text-muted)',
                                         transition: '0.3s',
-                                        fontWeight: '600'
+                                        fontWeight: '700'
                                     }}
                                 >
                                     <span style={{ fontSize: '1.4rem' }}>📊</span> Reportes
                                 </li>
                                 <li
-                                    onClick={() => setActiveTab('monitoring')}
+                                    onClick={() => handleTabChange('monitoring')}
                                     style={{
                                         padding: '15px 20px',
                                         borderRadius: '12px',
@@ -136,13 +174,13 @@ const Dashboard: React.FC = () => {
                                         background: activeTab === 'monitoring' ? 'var(--secondary)' : 'transparent',
                                         color: activeTab === 'monitoring' ? 'white' : 'var(--text-muted)',
                                         transition: '0.3s',
-                                        fontWeight: '600'
+                                        fontWeight: '700'
                                     }}
                                 >
                                     <span style={{ fontSize: '1.4rem' }}>👁️</span> Monitoreo
                                 </li>
                                 <li
-                                    onClick={() => setActiveTab('users')}
+                                    onClick={() => handleTabChange('users')}
                                     style={{
                                         padding: '15px 20px',
                                         borderRadius: '12px',
@@ -152,9 +190,9 @@ const Dashboard: React.FC = () => {
                                         alignItems: 'center',
                                         gap: '12px',
                                         background: activeTab === 'users' ? 'var(--primary)' : 'transparent',
-                                        color: activeTab === 'users' ? 'white' : 'var(--text-muted)',
+                                        color: activeTab === 'users' ? 'black' : 'var(--text-muted)',
                                         transition: '0.3s',
-                                        fontWeight: '600'
+                                        fontWeight: '700'
                                     }}
                                 >
                                     <span style={{ fontSize: '1.4rem' }}>👥</span> Usuarios
@@ -197,9 +235,31 @@ const Dashboard: React.FC = () => {
                 </div>
             </aside>
 
+            {/* Menu Backdrop for Mobile */}
+            {isMenuOpen && (
+                <div
+                    className="mobile-only"
+                    onClick={() => setIsMenuOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.6)',
+                        backdropFilter: 'blur(3px)',
+                        zIndex: 2050
+                    }}
+                ></div>
+            )}
+
             {/* Main Content */}
-            <main style={{ flex: 1, padding: '2.5rem', overflowY: 'auto', background: 'linear-gradient(135deg, #0a0a0c 0%, #15151a 100%)', position: 'relative' }}>
-                <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <main style={{
+                flex: 1,
+                padding: window.innerWidth <= 768 ? '1rem' : '2.5rem',
+                paddingTop: window.innerWidth <= 768 ? '85px' : '2.5rem',
+                overflowY: 'auto',
+                background: 'linear-gradient(135deg, #0a0a0c 0%, #15151a 100%)',
+                position: 'relative'
+            }}>
+                <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
                     <div>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: '800' }}>
                             {activeTab === 'sales' && 'Módulo de Ventas'}
@@ -212,7 +272,7 @@ const Dashboard: React.FC = () => {
                             Gestiona tu óptica con precisión y eficiencia.
                         </p>
                     </div>
-                    <div className="glass-card" style={{ padding: '0.8rem 1.5rem', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div className="glass-card desktop-only" style={{ padding: '0.8rem 1.5rem', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ fontSize: '1.2rem' }}>📅</span>
                         <span style={{ fontWeight: '600' }}>{new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     </div>

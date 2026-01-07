@@ -5,7 +5,7 @@ import autoTable from 'jspdf-autotable';
 import { useData } from '../context/DataContext';
 
 const Reports: React.FC = () => {
-    const { sales, clearSalesData } = useData();
+    const { sales, clearSalesData, config } = useData();
 
     // Process data for charts
     const salesByDay = sales.reduce((acc: any[], sale) => {
@@ -28,7 +28,7 @@ const Reports: React.FC = () => {
         // Title
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
-        doc.text("Reporte de Ventas - Sport Lentes", 14, 22);
+        doc.text(`Reporte de Ventas - ${config.name}`, 14, 22);
 
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
