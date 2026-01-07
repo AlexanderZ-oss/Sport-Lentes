@@ -69,7 +69,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [products, setProducts] = useState<Product[]>([]);
     const [sales, setSales] = useState<Sale[]>([]);
     const [logs, setLogs] = useState<ActivityLog[]>([]);
-    const [isDataLoading, setIsDataLoading] = useState(true);
     const [config, setConfig] = useState<Config>({
         ruc: '20601234567',
         address: 'Av. Principal 123, Ciudad',
@@ -77,17 +76,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: 'Sport Lentes'
     });
     const [hasCheckedInitialProducts, setHasCheckedInitialProducts] = useState(false);
-
-    const initialProducts = [
-        { code: '1001', name: 'Velocity Racer Neon', price: 299.90, stock: 15, category: 'Running', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=600' },
-        { code: '1002', name: 'Hydro Blue Polarized', price: 349.00, stock: 8, category: 'Acuáticos', image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=600' },
-        { code: '1003', name: 'Stealth Black Ops', price: 199.50, stock: 25, category: 'Táctico', image: 'https://images.unsplash.com/photo-1577803645773-f933d55cd051?auto=format&fit=crop&q=80&w=600' },
-        { code: '1004', name: 'Cycling Master Z', price: 420.00, stock: 3, category: 'Ciclismo', image: 'https://images.unsplash.com/photo-1625591339762-430970bb6221?auto=format&fit=crop&q=80&w=600' },
-        { code: '1005', name: 'Mountain View X', price: 180.00, stock: 12, category: 'Hiking', image: 'https://plus.unsplash.com/premium_photo-1675715923985-782f9479b1d3?auto=format&fit=crop&q=80&w=600' },
-        { code: '1006', name: 'Urban Style Gold', price: 150.00, stock: 20, category: 'Casual', image: 'https://images.unsplash.com/photo-1508296695146-25e7b52a154f?auto=format&fit=crop&q=80&w=600' },
-        { code: '1007', name: 'Snow Force Goggles', price: 550.00, stock: 5, category: 'Nieve', image: 'https://images.unsplash.com/photo-1516802273409-68526ee1bdd6?auto=format&fit=crop&q=80&w=600' },
-        { code: '1008', name: 'Night Rider Vision', price: 210.00, stock: 10, category: 'Nocturno', image: 'https://images.unsplash.com/photo-1616147425420-22c608f44d8c?auto=format&fit=crop&q=80&w=600' }
-    ];
 
     useEffect(() => {
         const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
@@ -97,27 +85,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } as Product));
             setProducts(prods);
 
-            // If we have data (cache or network), stop loading
             if (prods.length > 0) {
-                setIsDataLoading(false);
                 setHasCheckedInitialProducts(true);
             }
 
-            // Seeding logic: only if definitely empty and on first network load
             if (!hasCheckedInitialProducts && prods.length === 0 && !snapshot.metadata.fromCache) {
                 setHasCheckedInitialProducts(true);
                 seedDatabase();
-                setIsDataLoading(false);
             }
         }, (error) => {
             console.error("Firestore error:", error);
-            setIsDataLoading(false); // don't block user on error
         });
-
-        // Safety timeout: 5 seconds max for loading screen
-        const timer = setTimeout(() => {
-            setIsDataLoading(false);
-        }, 5000);
 
         const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
         const unsubSales = onSnapshot(salesQuery, (snapshot) => {
@@ -144,7 +122,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         return () => {
-            clearTimeout(timer);
             unsubProducts();
             unsubSales();
             unsubLogs();
@@ -156,6 +133,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const snap = await getDocs(collection(db, 'products'));
         if (!snap.empty) return;
         const batch = writeBatch(db);
+        const initialProducts = [
+            { code: '1001', name: 'Velocity Racer Neon', price: 299.90, stock: 15, category: 'Running', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=600' },
+            { code: '1002', name: 'Hydro Blue Polarized', price: 349.00, stock: 8, category: 'Acuáticos', image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=600' }
+        ];
         initialProducts.forEach(p => {
             const docRef = doc(collection(db, 'products'));
             batch.set(docRef, p);
@@ -258,11 +239,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <DataContext.Provider value={{ products, sales, logs, config, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
-            {isDataLoading && products.length === 0 ? (
-                <div style={{ display: 'flex', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: 'white' }}>
-                    <div className="animate-pulse">Sincronizando Inventario...</div>
-                </div>
-            ) : children}
+            {children}
         </DataContext.Provider>
     );
 };

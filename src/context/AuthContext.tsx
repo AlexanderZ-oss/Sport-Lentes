@@ -211,14 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, usersList, login, logout, isLoading, addUser, deleteUser, toggleUserStatus }}>
-      {isLoading && usersList.length === 0 ? (
-        <div style={{ display: 'flex', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: '#0a0a0c', color: 'white' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--primary)' }}>Sincronizando...</div>
-            <p style={{ color: 'var(--text-muted)' }}>Optimizando acceso de Sport Lentes</p>
-          </div>
-        </div>
-      ) : children}
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -13,49 +13,50 @@ const LandingPage: React.FC = () => {
                 pointerEvents: 'none'
             }}></div>
             {/* Navigation */}
-            <nav style={{ padding: '1.5rem 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(10,10,12,0.8)', backdropFilter: 'blur(10px)', position: 'fixed', width: '100%', top: 0, zIndex: 100 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src="/logo.jpg" alt="Logo" style={{ height: '50px', borderRadius: '8px' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                        <span style={{ color: 'var(--primary)' }}>SPORT</span> LENTES
+            <nav style={{ padding: '1rem 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(10,10,12,0.9)', backdropFilter: 'blur(15px)', position: 'fixed', width: '100%', top: 0, zIndex: 100, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <img src="/logo.jpg" alt="Logo" style={{ height: '60px', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }} />
+                    <div style={{ fontSize: '1.8rem', fontWeight: '900', letterSpacing: '2px' }}>
+                        <span style={{ color: 'var(--primary)' }}>SPORT</span> LENTS
                     </div>
                 </div>
                 <div>
-                    <Link to="/login" style={{ color: 'white', textDecoration: 'none', fontWeight: 600, padding: '0.6rem 1.5rem', background: 'var(--primary)', borderRadius: '8px', transition: '0.3s' }}>Iniciar Sesión</Link>
+                    <Link to="/login" style={{ color: 'white', textDecoration: 'none', fontWeight: 800, padding: '0.8rem 2rem', background: 'var(--primary)', borderRadius: '12px', transition: '0.3s', boxShadow: '0 10px 20px -5px rgba(0, 229, 255, 0.4)' }}>ACCESO PERSONAL</Link>
                 </div>
             </nav>
 
             {/* Hero Section */}
             <section style={{
-                padding: '140px 5% 80px',
+                padding: '160px 5% 100px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '4rem',
                 maxWidth: '1400px',
-                margin: '0 auto'
+                margin: '0 auto',
+                flexWrap: 'wrap'
             }}>
                 <div style={{ maxWidth: '650px', zIndex: 1 }}>
-                    <div style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'rgba(0, 229, 255, 0.1)', color: 'var(--primary)', borderRadius: '50px', marginBottom: '1.5rem', fontWeight: '600', border: '1px solid rgba(0, 229, 255, 0.2)' }} className="animate-fade-in">
-                        NUEVA COLECCIÓN 2026
+                    <img src="/logo.jpg" alt="Sport Lents Brand" style={{ width: '180px', borderRadius: '20px', marginBottom: '2rem', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)' }} className="animate-fade-in" />
+                    <div style={{ display: 'inline-block', padding: '0.5rem 1.5rem', background: 'rgba(0, 229, 255, 0.1)', color: 'var(--primary)', borderRadius: '50px', marginBottom: '1.5rem', fontWeight: '700', border: '1px solid rgba(0, 229, 255, 0.3)', letterSpacing: '1px' }} className="animate-fade-in">
+                        DISTRIBUIDOR AUTORIZADO
                     </div>
-                    <h1 style={{ fontSize: 'clamp(3rem, 5vw, 5rem)', lineHeight: '1.1', marginBottom: '1.5rem' }} className="animate-fade-in">
-                        Domina tu <br /><span className="gradient-text">Visión</span>
+                    <h1 style={{ fontSize: 'clamp(3.5rem, 6vw, 5.5rem)', lineHeight: '1', marginBottom: '1.5rem', fontWeight: '900' }} className="animate-fade-in">
+                        Visión de <br /><span className="gradient-text">Campeones</span>
                     </h1>
-                    <p style={{ fontSize: '1.25rem', color: 'var(--text-muted)', marginBottom: '2.5rem', lineHeight: '1.6' }} className="animate-fade-in">
-                        Tecnología óptica avanzada para deportistas que no aceptan límites. Claridad, protección y estilo en un solo diseño.
+                    <p style={{ fontSize: '1.3rem', color: 'var(--text-muted)', marginBottom: '2.5rem', lineHeight: '1.6', maxWidth: '500px' }} className="animate-fade-in">
+                        Monturas ópticas de Carey, Acetato y Lentes de Sol para damas, caballeros y niños. Calidad superior para cada desafío.
                     </p>
-                    <div style={{ display: 'flex', gap: '1rem' }} className="animate-fade-in">
-                        <Link to="/login" className="btn-primary" style={{ padding: '1.2rem 3rem', fontSize: '1.1rem', textDecoration: 'none', borderRadius: '50px' }}>Explorar Sistema</Link>
-                        <button style={{ background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '1.2rem 3rem', borderRadius: '50px', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s' }}>Ver Video</button>
+                    <div style={{ display: 'flex', gap: '1.5rem' }} className="animate-fade-in">
+                        <Link to="/login" className="btn-primary" style={{ padding: '1.3rem 3.5rem', fontSize: '1.2rem', textDecoration: 'none', borderRadius: '15px', fontWeight: '700' }}>Entrar al Sistema</Link>
                     </div>
                 </div>
-                <div className="animate-fade-in" style={{ animationDelay: '0.2s', position: 'relative' }}>
-                    <div style={{ position: 'absolute', inset: '-20px', background: 'var(--primary)', filter: 'blur(80px)', opacity: 0.2, borderRadius: '50%' }}></div>
+                <div className="animate-fade-in" style={{ animationDelay: '0.2s', position: 'relative', flex: '1', minWidth: '350px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', inset: '-30px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.15, borderRadius: '50%' }}></div>
                     <img
-                        src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=600"
+                        src="/logo.jpg"
                         alt="Lentes deportivos premium"
-                        style={{ width: '100%', maxWidth: '550px', borderRadius: '30px', transform: 'rotate(-5deg)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ width: '100%', maxWidth: '500px', borderRadius: '40px', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', transform: 'rotate(-2deg)' }}
                     />
                 </div>
             </section>
