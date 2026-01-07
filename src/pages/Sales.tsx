@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const Sales: React.FC = () => {
-    const { products, addSale, config, updateConfig } = useData();
+    const { products, addSale, config, updateConfig, isDataLoading } = useData();
     const { user } = useAuth();
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
     const [editingConfig, setEditingConfig] = useState(config);
@@ -21,6 +21,16 @@ const Sales: React.FC = () => {
     const [showScanner, setShowScanner] = useState(false);
 
     const [applyIgv, setApplyIgv] = useState(true);
+
+    if (isDataLoading) {
+        return (
+            <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                <div style={{ width: '40px', height: '40px', border: '4px solid rgba(255,255,255,0.1)', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1rem' }}></div>
+                <p style={{ fontWeight: 700, letterSpacing: '1px' }}>SINCRONIZANDO PRECIOS Y STOCK...</p>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     const addToCart = (product: Product) => {
         if (product.stock <= 0) {

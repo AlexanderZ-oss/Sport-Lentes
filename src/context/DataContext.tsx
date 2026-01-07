@@ -55,6 +55,7 @@ interface DataContextType {
     sales: Sale[];
     logs: ActivityLog[];
     config: Config;
+    isDataLoading: boolean;
     addProduct: (product: Omit<Product, 'id'>, userName: string) => Promise<void>;
     updateStock: (productId: string, quantity: number, userName: string) => Promise<void>;
     addSale: (sale: Omit<Sale, 'id'>, userName: string) => Promise<void>;
@@ -70,6 +71,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [products, setProducts] = useState<Product[]>([]);
     const [sales, setSales] = useState<Sale[]>([]);
     const [logs, setLogs] = useState<ActivityLog[]>([]);
+    const [isDataLoading, setIsDataLoading] = useState(true);
     const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
     const [config, setConfig] = useState<Config>({
         ruc: '20601234567',
@@ -86,9 +88,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...doc.data()
             } as Product));
 
-            setProducts(prods);
+            setProducts([...prods]);
+            setIsDataLoading(false);
 
-            // If data is coming from cache and we have no network, we notify
             if (snapshot.metadata.fromCache) {
                 setConnectionStatus('syncing');
             } else {
@@ -97,6 +99,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }, (error) => {
             console.error("Firestore error (Products):", error);
             setConnectionStatus('offline');
+            setIsDataLoading(false);
         });
 
         const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
@@ -247,8 +250,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const styles = getStatusStyles();
 
     return (
-        <DataContext.Provider value={{ products, sales, logs, config, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
-            <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none' }}>
+        <DataContext.Provider value={{ products, sales, logs, config, isDataLoading, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
+            <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                <div style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.6rem',
+                    background: 'rgba(0,0,0,0.5)',
+                    color: 'rgba(255,255,255,0.5)',
+                    backdropFilter: 'blur(2px)'
+                }}>
+                    NUBE ID: {products.length} PRODUCTOS SYNC
+                </div>
                 <div style={{
                     padding: '5px 12px',
                     borderRadius: '20px',
