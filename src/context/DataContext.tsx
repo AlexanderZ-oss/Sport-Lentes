@@ -56,6 +56,7 @@ interface DataContextType {
     logs: ActivityLog[];
     config: Config;
     isDataLoading: boolean;
+    syncError: string | null;
     addProduct: (product: Omit<Product, 'id'>, userName: string) => Promise<void>;
     updateStock: (productId: string, quantity: number, userName: string) => Promise<void>;
     addSale: (sale: Omit<Sale, 'id'>, userName: string) => Promise<void>;
@@ -81,6 +82,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return saved ? JSON.parse(saved) : [];
     });
     const [isDataLoading, setIsDataLoading] = useState(true);
+    const [syncError, setSyncError] = useState<string | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
     const [config, setConfig] = useState<Config>(() => {
         const saved = localStorage.getItem('sport_lentes_config');
@@ -93,16 +95,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     useEffect(() => {
-        // Monitor Online Status via Products - FORCE CLOUD PRIORITY
+        // Monitor Online Status via Products - ULTRA-AGGRESSIVE SYNC
         const unsubProducts = onSnapshot(collection(db, 'products'), { includeMetadataChanges: true }, (snapshot) => {
             const prods: Product[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Product));
 
-            setProducts([...prods]);
-            localStorage.setItem('sport_lentes_products', JSON.stringify(prods));
+            // Only update if there is data OR we are 100% online
+            if (prods.length > 0 || !snapshot.metadata.fromCache) {
+                setProducts([...prods]);
+                localStorage.setItem('sport_lentes_products', JSON.stringify(prods));
+            }
+
             setIsDataLoading(false);
+            setSyncError(null);
 
             if (snapshot.metadata.fromCache) {
                 setConnectionStatus('syncing');
@@ -111,6 +118,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }, (error) => {
             console.error("Firestore error (Products):", error);
+            setSyncError(error.message);
             setConnectionStatus('offline');
             setIsDataLoading(false);
         });
@@ -123,7 +131,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } as Sale));
             setSales(salesData);
             localStorage.setItem('sport_lentes_sales', JSON.stringify(salesData));
-        });
+            setSyncError(null);
+        }, (error) => setSyncError(error.message));
 
         const logsQuery = query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(50));
         const unsubLogs = onSnapshot(logsQuery, { includeMetadataChanges: true }, (snapshot) => {
@@ -133,15 +142,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } as ActivityLog));
             setLogs(logsData);
             localStorage.setItem('sport_lentes_logs', JSON.stringify(logsData));
-        });
+            setSyncError(null);
+        }, (error) => setSyncError(error.message));
 
         const unsubConfig = onSnapshot(doc(db, 'settings', 'app_config'), { includeMetadataChanges: true }, (snapshot) => {
             if (snapshot.exists()) {
                 const confData = snapshot.data() as Config;
                 setConfig(confData);
                 localStorage.setItem('sport_lentes_config', JSON.stringify(confData));
+                setSyncError(null);
             }
-        });
+        }, (error) => setSyncError(error.message));
 
         return () => {
             unsubProducts();
@@ -267,8 +278,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const styles = getStatusStyles();
 
     return (
-        <DataContext.Provider value={{ products, sales, logs, config, isDataLoading, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
+        <DataContext.Provider value={{ products, sales, logs, config, isDataLoading, syncError, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
             <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                {syncError && (
+                    <div style={{
+                        padding: '8px 15px',
+                        background: 'rgba(255,0,0,0.85)',
+                        color: 'white',
+                        borderRadius: '8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                        border: '1px solid #ff4444',
+                        marginBottom: '5px',
+                        maxWidth: '250px',
+                        pointerEvents: 'auto'
+                    }}>
+                        ⚠️ ERROR DE NUBE: {syncError === 'Missing or insufficient permissions.' ? 'REGLAS BLOQUEADAS' : syncError}
+                    </div>
+                )}
                 <div style={{
                     padding: '2px 8px',
                     borderRadius: '4px',
