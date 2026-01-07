@@ -3,18 +3,15 @@ import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 
-// Restore direct config to prevent Vercel environment variable dependency issues
-// Obfuscated to avoid trigger-happy security scanners
-const _k = "AIzaSyD91" + "9E0yEkLag7pPVl" + "HKbsLa_t2In_1rWA";
-
+// Config secured with environment variables (Vite uses import.meta.env)
 const firebaseConfig = {
-    apiKey: _k,
-    authDomain: "sport-lentes.firebaseapp.com",
-    projectId: "sport-lentes",
-    storageBucket: "sport-lentes.firebasestorage.app",
-    messagingSenderId: "14743594608",
-    appId: "1:14743594608:web:6d976daebed149247436b5",
-    measurementId: "G-EN715EQMMP"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
