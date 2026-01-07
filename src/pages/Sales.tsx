@@ -151,20 +151,24 @@ const Sales: React.FC = () => {
             const dataWithId = { ...saleData, id: realSaleId };
             setLastSale(dataWithId);
 
-            // Send to Google Sheets (Background)
-            const sheetData = {
-                id: realSaleId,
-                date: new Date().toLocaleString(),
-                total: dataWithId.total,
-                seller: user?.name || 'Vendedor',
-                client: clientData.ruc || 'Anonimo',
-                items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
-                paymentType: saleType
-            };
-            saveToGoogleSheets(sheetData).catch(err => console.error("Error Sheets:", err));
+            // Send to Google Sheets (Background - don't let it block)
+            try {
+                const sheetData = {
+                    id: realSaleId,
+                    date: new Date().toLocaleString(),
+                    total: dataWithId.total,
+                    seller: user?.name || 'Vendedor',
+                    client: clientData.ruc || 'Anonimo',
+                    items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+                    paymentType: saleType
+                };
+                saveToGoogleSheets(sheetData).catch(err => console.error("Error Sheets:", err));
+            } catch (sheetErr) {
+                console.error("Critical Sheets Error:", sheetErr);
+            }
 
             setCart([]);
-            setClientData({ name: '', ruc: '', address: '' });
+            setClientData({ ruc: '' });
             setDiscount(0);
             setShowReceipt(true);
             setIsCartVisible(false);
@@ -223,24 +227,12 @@ const Sales: React.FC = () => {
         doc.text(`${lastSale.sellerName}`, 40, 82);
 
         // Client Info
-        if (lastSale.client?.ruc || lastSale.client?.name) {
+        if (lastSale.client?.ruc) {
             doc.line(20, 88, 190, 88);
             doc.setFont('helvetica', 'bold');
-            doc.text(`CLIENTE:`, 20, 95);
+            doc.text(`Identificación (RUC/DNI):`, 20, 95);
             doc.setFont('helvetica', 'normal');
-            doc.text(`${lastSale.client.name || 'PÚBLICO EN GENERAL'}`, 45, 95);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text(`DNI/RUC:`, 20, 101);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`${lastSale.client.ruc || '---'}`, 45, 101);
-
-            if (lastSale.client.address) {
-                doc.setFont('helvetica', 'bold');
-                doc.text(`DIRECCIÓN:`, 20, 107);
-                doc.setFont('helvetica', 'normal');
-                doc.text(`${lastSale.client.address}`, 45, 107);
-            }
+            doc.text(`${lastSale.client.ruc}`, 70, 95);
         }
 
         // Table
@@ -260,7 +252,7 @@ const Sales: React.FC = () => {
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: (lastSale.client?.ruc || lastSale.client?.name) ? (lastSale.client.address ? 115 : 108) : 90,
+            startY: lastSale.client?.ruc ? 102 : 90,
             theme: 'grid',
             headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
             alternateRowStyles: { fillColor: [245, 245, 245] }
@@ -495,26 +487,12 @@ const Sales: React.FC = () => {
                                 >Mayor</button>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <div style={{ marginBottom: '1rem' }}>
                             <input
                                 type="text"
-                                placeholder="DNI / RUC del Cliente"
+                                placeholder="RUC / DNI Cliente (Opcional)"
                                 value={clientData.ruc}
-                                onChange={(e) => setClientData({ ...clientData, ruc: e.target.value })}
-                                style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--glass-border)', color: 'white' }}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Nombre / Razón Social"
-                                value={clientData.name}
-                                onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
-                                style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--glass-border)', color: 'white' }}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Dirección (Opcional)"
-                                value={clientData.address}
-                                onChange={(e) => setClientData({ ...clientData, address: e.target.value })}
+                                onChange={(e) => setClientData({ ruc: e.target.value })}
                                 style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--glass-border)', color: 'white' }}
                             />
                         </div>
@@ -691,16 +669,10 @@ const Sales: React.FC = () => {
                                 <p style={{ fontSize: '0.9rem' }}>{lastSale.id?.toUpperCase()}</p>
                             </div>
 
-                            <div style={{ fontSize: '0.85rem', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                <div>
-                                    <p><strong>Fecha:</strong><br />{new Date(lastSale.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</p>
-                                    <p><strong>Vendedor:</strong><br />{lastSale.sellerName}</p>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <p><strong>Cliente:</strong><br />{lastSale.client?.name || 'PÚBLICO EN GENERAL'}</p>
-                                    <p><strong>DNI/RUC:</strong><br />{lastSale.client?.ruc || '---'}</p>
-                                    {lastSale.client?.address && <p><strong>Dir:</strong><br />{lastSale.client.address}</p>}
-                                </div>
+                            <div style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                <p><strong>Fecha:</strong> {new Date(lastSale.date).toLocaleString()}</p>
+                                <p><strong>Vendedor:</strong> {lastSale.sellerName}</p>
+                                {lastSale.client?.ruc && <p><strong>DNI/RUC:</strong> {lastSale.client.ruc}</p>}
                             </div>
 
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
