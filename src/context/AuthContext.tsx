@@ -34,6 +34,7 @@ interface AuthContextType {
   addUser: (newUser: Omit<User, 'id'>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   toggleUserStatus: (id: string) => Promise<void>;
+  updateUser: (id: string, updates: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -204,13 +205,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUser = async (id: string, updates: Partial<User>) => {
+    try {
+      await updateDoc(doc(db, 'users', id), updates);
+    } catch (e) {
+      console.error("Error updating user", e);
+      throw e;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEYS.USER);
   };
 
   return (
-    <AuthContext.Provider value={{ user, usersList, login, logout, isLoading, addUser, deleteUser, toggleUserStatus }}>
+    <AuthContext.Provider value={{ user, usersList, login, logout, isLoading, addUser, deleteUser, toggleUserStatus, updateUser }}>
       <div style={{ position: 'fixed', bottom: '35px', right: '10px', zIndex: 9999, pointerEvents: 'none' }}>
         <div style={{
           padding: '5px 12px',

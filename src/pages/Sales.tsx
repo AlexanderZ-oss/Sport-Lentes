@@ -66,11 +66,6 @@ const Sales: React.FC = () => {
         return calculateSubtotal() - discount;
     };
 
-    const handleTotalChange = (newTotal: number) => {
-        const subtotal = calculateSubtotal();
-        setDiscount(subtotal - newTotal);
-    };
-
     const removeFromCart = (productId: string) => {
         setCart(cart.filter(item => item.product.id !== productId));
     };
@@ -99,6 +94,8 @@ const Sales: React.FC = () => {
         }
     };
 
+    const [clientData, setClientData] = useState({ name: '', ruc: '', address: '' });
+
     const handleFinalizeSale = async () => {
         if (cart.length === 0) return;
 
@@ -106,6 +103,7 @@ const Sales: React.FC = () => {
             date: new Date().toISOString(),
             saleType,
             discount,
+            client: clientData,
             items: cart.map(item => ({
                 productId: item.product.id,
                 name: item.product.name,
@@ -122,13 +120,20 @@ const Sales: React.FC = () => {
             const realSaleId = await addSale(saleData, user?.name || 'Vendedor');
             setLastSale({ ...saleData, id: realSaleId });
             setCart([]);
+            setClientData({ name: '', ruc: '', address: '' }); // Reset client data
             setShowReceipt(true);
             setIsCartVisible(false);
-            setDiscount(0); // Reset discount for next sale
+            setDiscount(0);
         } catch (error: any) {
             console.error("Detalle del error en venta:", error);
             alert(`⚠️ ERROR AL PROCESAR VENTA: ${error.message || 'No se pudo guardar en la nube'}. Verifica tu conexión.`);
         }
+    };
+
+    const handleTotalChange = (newTotal: number) => {
+        const subtotal = calculateSubtotal();
+        const newDiscount = Math.max(0, subtotal - newTotal);
+        setDiscount(newDiscount);
     };
 
     const generatePDF = () => {
@@ -167,6 +172,25 @@ const Sales: React.FC = () => {
         doc.setFont('helvetica', 'normal');
         doc.text(`${lastSale.sellerName}`, 40, 82);
 
+        // Client Info
+        if (lastSale.client?.name || lastSale.client?.ruc) {
+            doc.line(20, 88, 190, 88);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Cliente:`, 20, 95);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${lastSale.client.name || '---'}`, 40, 95);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text(`RUC/DNI:`, 20, 102);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${lastSale.client.ruc || '---'}`, 40, 102);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Dirección:`, 20, 109);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${lastSale.client.address || '---'}`, 40, 109);
+        }
+
         // Table
         const tableColumn = ["Cant.", "Descripción", "P. Unit", "Total"];
         const tableRows: string[][] = [];
@@ -184,7 +208,7 @@ const Sales: React.FC = () => {
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: 90,
+            startY: lastSale.client?.name ? 115 : 90,
             theme: 'grid',
             headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
             alternateRowStyles: { fillColor: [245, 245, 245] }
@@ -195,8 +219,8 @@ const Sales: React.FC = () => {
         let finalY = doc.lastAutoTable.finalY + 10;
 
         if (applyIgv) {
-            doc.text(`OP. GRAVADA:   S/ ${(lastSale.total * 0.82).toFixed(2)}`, 140, finalY, { align: 'right' });
-            doc.text(`IGV (18%):   S/ ${(lastSale.total * 0.18).toFixed(2)}`, 140, finalY + 7, { align: 'right' });
+            doc.text(`OP. GRAVADA:   S/ ${(lastSale.total * 0.8475).toFixed(2)}`, 140, finalY, { align: 'right' });
+            doc.text(`IGV (18%):   S/ ${(lastSale.total * 0.1525).toFixed(2)}`, 140, finalY + 7, { align: 'right' });
             finalY += 15;
         }
 
@@ -382,19 +406,20 @@ const Sales: React.FC = () => {
                 </div>
 
                 {/* Sale Type & Discount Controls */}
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>
+                    <h5 style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--primary)' }}>⚙️ Opciones de Venta</h5>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Tipo de Venta:</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tipo:</span>
                         <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: '8px', padding: '4px' }}>
                             <button
                                 onClick={() => setSaleType('unit')}
                                 style={{
-                                    padding: '6px 12px',
+                                    padding: '6px 10px',
                                     borderRadius: '6px',
                                     background: saleType === 'unit' ? 'var(--primary)' : 'transparent',
                                     color: saleType === 'unit' ? 'black' : 'var(--text-muted)',
                                     fontWeight: 'bold',
-                                    fontSize: '0.85rem'
+                                    fontSize: '0.75rem'
                                 }}
                             >
                                 Unidad
@@ -402,21 +427,21 @@ const Sales: React.FC = () => {
                             <button
                                 onClick={() => setSaleType('wholesale')}
                                 style={{
-                                    padding: '6px 12px',
+                                    padding: '6px 10px',
                                     borderRadius: '6px',
                                     background: saleType === 'wholesale' ? 'var(--secondary)' : 'transparent',
                                     color: saleType === 'wholesale' ? 'white' : 'var(--text-muted)',
                                     fontWeight: 'bold',
-                                    fontSize: '0.85rem'
+                                    fontSize: '0.75rem'
                                 }}
                             >
-                                Mayorista
+                                Mayor
                             </button>
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Descuento (S/):</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Descuento:</span>
                         <input
                             type="number"
                             min="0"
@@ -429,22 +454,51 @@ const Sales: React.FC = () => {
                                 background: 'var(--surface)',
                                 border: '1px solid var(--glass-border)',
                                 color: 'white',
-                                textAlign: 'right'
+                                textAlign: 'right',
+                                fontSize: '0.8rem'
                             }}
                         />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <input
                             type="checkbox"
                             id="applyIgv"
                             checked={applyIgv}
                             onChange={(e) => setApplyIgv(e.target.checked)}
-                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                         />
-                        <label htmlFor="applyIgv" style={{ fontSize: '0.9rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                            Aplicar IGV (18%) en Boleta
+                        <label htmlFor="applyIgv" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                            Separar IGV (18%)
                         </label>
+                    </div>
+                </div>
+
+                {/* Client Data Section */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                    <h5 style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--primary)' }}>👤 Datos del Cliente</h5>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        <input
+                            type="text"
+                            placeholder="Nombre / Razón Social"
+                            value={clientData.name}
+                            onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
+                        />
+                        <input
+                            type="text"
+                            placeholder="RUC / DNI"
+                            value={clientData.ruc}
+                            onChange={(e) => setClientData({ ...clientData, ruc: e.target.value })}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
+                        />
+                        <input
+                            type="text"
+                            placeholder="Dirección"
+                            value={clientData.address}
+                            onChange={(e) => setClientData({ ...clientData, address: e.target.value })}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
+                        />
                     </div>
                 </div>
 
@@ -496,12 +550,12 @@ const Sales: React.FC = () => {
                     {applyIgv && (
                         <>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
-                                <span>Subtotal:</span>
-                                <span>S/ {(calculateTotal() * 0.82).toFixed(2)}</span>
+                                <span>Subtotal (OP. GRAVADA):</span>
+                                <span>S/ {(calculateTotal() / 1.18).toFixed(2)}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: 'var(--text-muted)' }}>
                                 <span>IGV (18%):</span>
-                                <span>S/ {(calculateTotal() * 0.18).toFixed(2)}</span>
+                                <span>S/ {(calculateTotal() - (calculateTotal() / 1.18)).toFixed(2)}</span>
                             </div>
                         </>
                     )}

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useData } from '../context/DataContext';
+import { useData, type Product } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import BarcodeScanner from '../components/BarcodeScanner';
 
 const Inventory: React.FC = () => {
-    const { products, addProduct, updateStock, deleteProduct, isDataLoading } = useData();
+    const { products, addProduct, updateStock, deleteProduct, updateProduct, isDataLoading } = useData();
     const { user } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
@@ -46,6 +46,26 @@ const Inventory: React.FC = () => {
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+    const handleUpdateProduct = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProduct) return;
+        try {
+            await updateProduct(editingProduct.id, {
+                name: editingProduct.name,
+                code: editingProduct.code,
+                price: Number(editingProduct.price),
+                stock: Number(editingProduct.stock),
+                category: editingProduct.category,
+                image: editingProduct.image
+            }, user?.name || 'Sistema');
+            setEditingProduct(null);
+        } catch (error) {
+            alert("❌ Error al actualizar producto");
+        }
+    };
 
     if (isDataLoading) {
         return (
@@ -186,6 +206,44 @@ const Inventory: React.FC = () => {
                 </form>
             )}
 
+            {/* Edit Modal */}
+            {editingProduct && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <form onSubmit={handleUpdateProduct} className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: '600px', display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) 2fr', gap: '1.5rem', padding: '2rem' }}>
+                        <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between' }}>
+                            <h4>Editar Producto</h4>
+                            <button type="button" onClick={() => setEditingProduct(null)} style={{ background: 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        {/* Left Col: Image Preview */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '15px', padding: '1rem', border: '1px dashed var(--glass-border)' }}>
+                            {editingProduct.image ? (
+                                <img src={editingProduct.image} alt="Preview" style={{ width: '100%', height: '150px', objectFit: 'contain', borderRadius: '10px' }} />
+                            ) : (
+                                <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📷</div>
+                                    <p style={{ fontSize: '0.8rem' }}>Sin Imagen</p>
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nombre</label>
+                                <input type="text" required value={editingProduct.name} onChange={e => setEditingProduct({ ...editingProduct, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Precio (S/)</label>
+                                <input type="number" required value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Stock</label>
+                                <input type="number" required value={editingProduct.stock} onChange={e => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <button type="submit" className="btn-primary" style={{ gridColumn: 'span 2', padding: '12px', borderRadius: '8px' }}>Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
             <div className="glass-card" style={{ padding: 0, overflow: 'hidden', borderRadius: '15px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
@@ -235,6 +293,13 @@ const Inventory: React.FC = () => {
                                 </td>
                                 <td style={{ padding: '1.2rem' }}>
                                     <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={() => setEditingProduct(p)}
+                                            style={{ background: 'var(--surface-hover)', color: 'white', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+                                            title="Editar Producto"
+                                        >
+                                            ✏️
+                                        </button>
                                         <button
                                             onClick={async () => {
                                                 try {

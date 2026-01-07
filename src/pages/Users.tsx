@@ -3,8 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import type { Role } from '../context/AuthContext';
 
 const Users: React.FC = () => {
-    const { usersList, addUser, deleteUser, toggleUserStatus } = useAuth();
+    const { usersList, addUser, deleteUser, toggleUserStatus, updateUser } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
+    const [editingUser, setEditingUser] = useState<any>(null);
     const [newUser, setNewUser] = useState<{ name: string; username: string; password: string; role: Role; verifyCode: string }>({
         name: '',
         username: '',
@@ -25,6 +26,21 @@ const Users: React.FC = () => {
         addUser({ name: newUser.name, username: newUser.username, password: newUser.password, role: newUser.role, status: 'active' });
         setIsAdding(false);
         setNewUser({ name: '', username: '', password: '', role: 'employee', verifyCode: '' });
+    };
+
+    const handleUpdateUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingUser) return;
+        try {
+            await updateUser(editingUser.id, {
+                name: editingUser.name,
+                password: editingUser.password,
+                role: editingUser.role
+            });
+            setEditingUser(null);
+        } catch (error) {
+            alert("❌ Error al actualizar usuario");
+        }
     };
 
     return (
@@ -94,6 +110,34 @@ const Users: React.FC = () => {
                 </form>
             )}
 
+            {/* Edit User Modal */}
+            {editingUser && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <form onSubmit={handleUpdateUser} className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: '500px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <h4>Editar Usuario: {editingUser.username}</h4>
+                            <button type="button" onClick={() => setEditingUser(null)} style={{ background: 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nombre Completo</label>
+                            <input type="text" required value={editingUser.name} onChange={e => setEditingUser({ ...editingUser, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nueva Contraseña</label>
+                            <input type="text" required value={editingUser.password} onChange={e => setEditingUser({ ...editingUser, password: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rol</label>
+                            <select value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value as Role })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }}>
+                                <option value="employee">Empleado</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <button type="submit" className="btn-primary" style={{ padding: '12px', borderRadius: '8px' }}>Guardar Cambios</button>
+                    </form>
+                </div>
+            )}
+
             <div className="glass-card" style={{ padding: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
@@ -127,21 +171,27 @@ const Users: React.FC = () => {
                                         display: 'flex', alignItems: 'center', gap: '6px'
                                     }}>
                                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: u.status === 'active' ? '#44ff44' : '#ff4444' }}></div>
-                                        {u.status === 'active' ? 'Activo' : 'Inactivo'}
+                                        {u.status === 'active' ? 'Activo' : 'Suspendido'}
                                     </span>
                                 </td>
                                 <td style={{ padding: '1.2rem' }}>
                                     <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={() => setEditingUser(u)}
+                                            style={{ background: 'var(--surface-hover)', color: 'white', border: '1px solid var(--glass-border)', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                                        >
+                                            ✏️ Editar
+                                        </button>
                                         <button
                                             onClick={() => toggleUserStatus(u.id)}
                                             style={{
                                                 background: 'var(--surface-hover)',
                                                 color: u.status === 'active' ? '#ffaa00' : '#44ff44',
                                                 border: '1px solid var(--glass-border)',
-                                                padding: '6px 12px', borderRadius: '6px'
+                                                padding: '6px 12px', borderRadius: '6px', cursor: 'pointer'
                                             }}
                                         >
-                                            {u.status === 'active' ? 'Desactivar' : 'Activar'}
+                                            {u.status === 'active' ? 'Suspender' : 'Activar'}
                                         </button>
                                         <button
                                             onClick={() => {
@@ -151,7 +201,7 @@ const Users: React.FC = () => {
                                                 background: 'rgba(255,68,68,0.1)',
                                                 color: '#ff4444',
                                                 border: '1px solid rgba(255,68,68,0.3)',
-                                                padding: '6px 12px', borderRadius: '6px'
+                                                padding: '6px 12px', borderRadius: '6px', cursor: 'pointer'
                                             }}
                                         >
                                             Eliminar

@@ -32,6 +32,13 @@ export interface Sale {
     total: number;
     sellerId: string;
     sellerName: string;
+    client?: {
+        name?: string;
+        ruc?: string;
+        address?: string;
+    };
+    saleType?: string;
+    discount?: number;
 }
 
 export interface ActivityLog {
@@ -62,6 +69,7 @@ interface DataContextType {
     addLog: (log: Omit<ActivityLog, 'id' | 'timestamp'>) => Promise<void>;
     clearSalesData: () => Promise<void>;
     deleteProduct: (productId: string, userName: string) => Promise<void>;
+    updateProduct: (productId: string, updates: Partial<Product>, userName: string) => Promise<void>;
     updateConfig: (newConfig: Config) => Promise<void>;
 }
 
@@ -294,6 +302,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // For now, let's keep the optimistic delete.
         }
     };
+    const updateProduct = async (productId: string, updates: Partial<Product>, userName: string) => {
+        try {
+            const productRef = doc(db, 'products', productId);
+            const product = products.find(p => p.id === productId);
+
+            await updateDoc(productRef, updates);
+
+            if (product) {
+                await addLog({
+                    user: userName,
+                    action: 'Producto Actualizado',
+                    details: `${product.name} - Cambios: ${Object.keys(updates).join(', ')}`
+                });
+            }
+        } catch (e) {
+            console.error("Error updating product:", e);
+            throw e;
+        }
+    };
 
     const updateConfig = async (newConfig: Config) => {
         try {
@@ -314,7 +341,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const styles = getStatusStyles();
 
     return (
-        <DataContext.Provider value={{ products, sales, logs, config, isDataLoading, syncError, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
+        <DataContext.Provider value={{ products, sales, logs, config, isDataLoading, syncError, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateProduct, updateConfig }}>
             <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
                 {syncError && (
                     <div style={{
