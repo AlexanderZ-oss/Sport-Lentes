@@ -21,7 +21,7 @@ const Sales: React.FC = () => {
     const [discount, setDiscount] = useState<number>(0);
     const [showScanner, setShowScanner] = useState(false);
     const [isCartVisible, setIsCartVisible] = useState(false); // For mobile cart toggle
-    const [clientData, setClientData] = useState({ name: '', ruc: '', address: '' });
+    const [clientData, setClientData] = useState({ ruc: '' });
     const [totalInputValue, setTotalInputValue] = useState<string>(''); // For flexible price entry
     const [isProcessing, setIsProcessing] = useState(false);
 
