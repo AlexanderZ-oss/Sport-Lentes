@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [usersList, setUsersList] = useState<User[]>([]);
+  const [isAuthOnline, setIsAuthOnline] = useState(false);
   const [hasCheckedInitialUsers, setHasCheckedInitialUsers] = useState(false);
 
   useEffect(() => {
@@ -63,21 +64,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } as User));
 
       setUsersList(uList);
-
-      if (uList.length > 0) {
-        setIsLoading(false);
-        setHasCheckedInitialUsers(true);
-      }
+      setIsAuthOnline(!snapshot.metadata.fromCache || uList.length > 0);
 
       // Seed if empty ONLY IF it's the first time checking and on network
       if (!hasCheckedInitialUsers && uList.length === 0 && !snapshot.metadata.fromCache) {
         setHasCheckedInitialUsers(true);
         seedUsers();
         setIsLoading(false);
+      } else if (uList.length > 0 || snapshot.metadata.fromCache === false) {
+        setHasCheckedInitialUsers(true);
+        setIsLoading(false);
       }
     }, (error) => {
       console.error("Auth sync error", error);
       setIsLoading(false);
+      setIsAuthOnline(false);
     });
 
     const timer = setTimeout(() => {
@@ -211,6 +212,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, usersList, login, logout, isLoading, addUser, deleteUser, toggleUserStatus }}>
+      <div style={{ position: 'fixed', bottom: '35px', right: '10px', zIndex: 9999, pointerEvents: 'none' }}>
+        <div style={{
+          padding: '5px 12px',
+          borderRadius: '20px',
+          fontSize: '0.7rem',
+          fontWeight: 'bold',
+          background: isAuthOnline ? 'rgba(0, 229, 255, 0.1)' : 'rgba(255, 0, 0, 0.1)',
+          color: isAuthOnline ? 'var(--primary)' : '#ff4444',
+          border: `1px solid ${isAuthOnline ? 'rgba(0, 229, 255, 0.2)' : 'rgba(255, 0, 0, 0.2)'}`,
+          backdropFilter: 'blur(5px)'
+        }}>
+          {isAuthOnline ? '● SESIÓN SINCRONIZADA' : '○ ERROR AUTH NUBE'}
+        </div>
+      </div>
       {children}
     </AuthContext.Provider>
   );

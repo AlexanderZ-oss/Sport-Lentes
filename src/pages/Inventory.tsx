@@ -10,11 +10,16 @@ const Inventory: React.FC = () => {
     const [newProduct, setNewProduct] = useState({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
     const [showScanner, setShowScanner] = useState(false);
 
-    const handleAddProduct = (e: React.FormEvent) => {
+    const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
-        addProduct(newProduct, user?.name || 'Sistema');
-        setIsAdding(false);
-        setNewProduct({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
+        try {
+            await addProduct(newProduct, user?.name || 'Sistema');
+            setIsAdding(false);
+            setNewProduct({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
+        } catch (error) {
+            alert("⚠️ ERROR CRÍTICO: No se pudo guardar en la nube. Revisa tu conexión a internet.");
+            console.error(error);
+        }
     };
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -206,14 +211,26 @@ const Inventory: React.FC = () => {
                                 <td style={{ padding: '1.2rem' }}>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button
-                                            onClick={() => updateStock(p.id, 1, user?.name || 'Sistema')}
+                                            onClick={async () => {
+                                                try {
+                                                    await updateStock(p.id, 1, user?.name || 'Sistema');
+                                                } catch (e) {
+                                                    alert("Error al actualizar stock en la nube");
+                                                }
+                                            }}
                                             style={{ background: 'var(--surface-hover)', color: 'white', width: '32px', height: '32px', borderRadius: '8px', fontSize: '1.2rem', cursor: 'pointer', border: 'none' }}
                                             title="Agregar Stock"
                                         >
                                             +
                                         </button>
                                         <button
-                                            onClick={() => updateStock(p.id, -1, user?.name || 'Sistema')}
+                                            onClick={async () => {
+                                                try {
+                                                    await updateStock(p.id, -1, user?.name || 'Sistema');
+                                                } catch (e) {
+                                                    alert("Error al actualizar stock en la nube");
+                                                }
+                                            }}
                                             style={{ background: 'var(--surface-hover)', color: 'white', width: '32px', height: '32px', borderRadius: '8px', fontSize: '1.2rem', cursor: 'pointer', border: 'none' }}
                                             title="Reducir Stock"
                                         >

@@ -69,32 +69,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [products, setProducts] = useState<Product[]>([]);
     const [sales, setSales] = useState<Sale[]>([]);
     const [logs, setLogs] = useState<ActivityLog[]>([]);
+    const [isOnline, setIsOnline] = useState(false);
     const [config, setConfig] = useState<Config>({
         ruc: '20601234567',
         address: 'Av. Principal 123, Ciudad',
         phone: '+51 951 955 969',
         name: 'Sport Lentes'
     });
-    const [hasCheckedInitialProducts, setHasCheckedInitialProducts] = useState(false);
 
     useEffect(() => {
+        // Monitor Online Status via Products
         const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
             const prods: Product[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Product));
             setProducts(prods);
-
-            if (prods.length > 0) {
-                setHasCheckedInitialProducts(true);
-            }
-
-            if (!hasCheckedInitialProducts && prods.length === 0 && !snapshot.metadata.fromCache) {
-                setHasCheckedInitialProducts(true);
-                seedDatabase();
-            }
+            setIsOnline(!snapshot.metadata.fromCache || prods.length > 0);
         }, (error) => {
-            console.error("Firestore error:", error);
+            console.error("Firestore error (Products):", error);
+            setIsOnline(false);
         });
 
         const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
@@ -239,6 +233,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <DataContext.Provider value={{ products, sales, logs, config, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
+            <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none' }}>
+                <div style={{
+                    padding: '5px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    background: isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
+                    color: isOnline ? '#44ff44' : '#ff4444',
+                    border: `1px solid ${isOnline ? 'rgba(0, 255, 0, 0.2)' : 'rgba(255, 0, 0, 0.2)'}`,
+                    backdropFilter: 'blur(5px)'
+                }}>
+                    {isOnline ? '● NUBE CONECTADA' : '○ BUSCANDO NUBE...'}
+                </div>
+            </div>
             {children}
         </DataContext.Provider>
     );

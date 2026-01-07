@@ -84,7 +84,7 @@ const Sales: React.FC = () => {
         }
     };
 
-    const handleFinalizeSale = () => {
+    const handleFinalizeSale = async () => {
         if (cart.length === 0) return;
 
         const saleData = {
@@ -102,10 +102,15 @@ const Sales: React.FC = () => {
             sellerName: user?.name || 'Vendedor'
         };
 
-        addSale(saleData, user?.name || 'Vendedor');
-        setLastSale({ ...saleData, id: Math.random().toString(36).substr(2, 9) });
-        setCart([]);
-        setShowReceipt(true);
+        try {
+            await addSale(saleData, user?.name || 'Vendedor');
+            setLastSale({ ...saleData, id: Math.random().toString(36).substr(2, 9) });
+            setCart([]);
+            setShowReceipt(true);
+        } catch (error) {
+            alert("⚠️ ERROR AL PROCESAR VENTA: No se pudo guardar en la nube. Verifica tu conexión.");
+            console.error(error);
+        }
     };
 
     const generatePDF = () => {
