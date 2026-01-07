@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import BarcodeScanner from '../components/BarcodeScanner';
 
 const Inventory: React.FC = () => {
-    const { products, addProduct, updateStock, deleteProduct, updateProduct, isDataLoading } = useData();
+    const { products, addProduct, updateStock, deleteProduct, updateProduct } = useData();
     const { user } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
@@ -67,15 +67,7 @@ const Inventory: React.FC = () => {
         }
     };
 
-    if (isDataLoading) {
-        return (
-            <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                <div style={{ width: '40px', height: '40px', border: '4px solid rgba(255,255,255,0.1)', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1rem' }}></div>
-                <p style={{ fontWeight: 700, letterSpacing: '1px' }}>SINCRONIZANDO CON LA NUBE...</p>
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-            </div>
-        );
-    }
+
 
     return (
         <div>

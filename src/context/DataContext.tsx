@@ -88,7 +88,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const saved = localStorage.getItem('sport_lentes_logs');
         return saved ? JSON.parse(saved) : [];
     });
-    const [isDataLoading, setIsDataLoading] = useState(true);
+    const [isDataLoading, setIsDataLoading] = useState(false);
     const [syncError, setSyncError] = useState<string | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
     const [config, setConfig] = useState<Config>(() => {
