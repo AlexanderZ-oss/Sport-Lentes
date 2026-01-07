@@ -68,16 +68,28 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [sales, setSales] = useState<Sale[]>([]);
-    const [logs, setLogs] = useState<ActivityLog[]>([]);
+    const [products, setProducts] = useState<Product[]>(() => {
+        const saved = localStorage.getItem('sport_lentes_products');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [sales, setSales] = useState<Sale[]>(() => {
+        const saved = localStorage.getItem('sport_lentes_sales');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [logs, setLogs] = useState<ActivityLog[]>(() => {
+        const saved = localStorage.getItem('sport_lentes_logs');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [isDataLoading, setIsDataLoading] = useState(true);
     const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
-    const [config, setConfig] = useState<Config>({
-        ruc: '20601234567',
-        address: 'Av. Principal 123, Ciudad',
-        phone: '+51 951 955 969',
-        name: 'Sport Lentes'
+    const [config, setConfig] = useState<Config>(() => {
+        const saved = localStorage.getItem('sport_lentes_config');
+        return saved ? JSON.parse(saved) : {
+            ruc: '20601234567',
+            address: 'Av. Principal 123, Ciudad',
+            phone: '+51 951 955 969',
+            name: 'Sport Lentes'
+        };
     });
 
     useEffect(() => {
@@ -89,6 +101,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } as Product));
 
             setProducts([...prods]);
+            localStorage.setItem('sport_lentes_products', JSON.stringify(prods));
             setIsDataLoading(false);
 
             if (snapshot.metadata.fromCache) {
@@ -109,6 +122,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...doc.data()
             } as Sale));
             setSales(salesData);
+            localStorage.setItem('sport_lentes_sales', JSON.stringify(salesData));
         });
 
         const logsQuery = query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(50));
@@ -118,11 +132,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...doc.data()
             } as ActivityLog));
             setLogs(logsData);
+            localStorage.setItem('sport_lentes_logs', JSON.stringify(logsData));
         });
 
         const unsubConfig = onSnapshot(doc(db, 'settings', 'app_config'), { includeMetadataChanges: true }, (snapshot) => {
             if (snapshot.exists()) {
-                setConfig(snapshot.data() as Config);
+                const confData = snapshot.data() as Config;
+                setConfig(confData);
+                localStorage.setItem('sport_lentes_config', JSON.stringify(confData));
             }
         });
 
