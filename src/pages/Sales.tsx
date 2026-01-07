@@ -94,7 +94,7 @@ const Sales: React.FC = () => {
         }
     };
 
-    const [clientData, setClientData] = useState({ name: '', ruc: '', address: '' });
+    const [clientData, setClientData] = useState({ ruc: '' });
 
     const handleFinalizeSale = async () => {
         if (cart.length === 0) return;
@@ -120,7 +120,7 @@ const Sales: React.FC = () => {
             const realSaleId = await addSale(saleData, user?.name || 'Vendedor');
             setLastSale({ ...saleData, id: realSaleId });
             setCart([]);
-            setClientData({ name: '', ruc: '', address: '' }); // Reset client data
+            setClientData({ ruc: '' }); // Reset client data
             setShowReceipt(true);
             setIsCartVisible(false);
             setDiscount(0);
@@ -173,22 +173,12 @@ const Sales: React.FC = () => {
         doc.text(`${lastSale.sellerName}`, 40, 82);
 
         // Client Info
-        if (lastSale.client?.name || lastSale.client?.ruc) {
+        if (lastSale.client?.ruc) {
             doc.line(20, 88, 190, 88);
             doc.setFont('helvetica', 'bold');
-            doc.text(`Cliente:`, 20, 95);
+            doc.text(`Identificación (RUC/DNI):`, 20, 95);
             doc.setFont('helvetica', 'normal');
-            doc.text(`${lastSale.client.name || '---'}`, 40, 95);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text(`RUC/DNI:`, 20, 102);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`${lastSale.client.ruc || '---'}`, 40, 102);
-
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Dirección:`, 20, 109);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`${lastSale.client.address || '---'}`, 40, 109);
+            doc.text(`${lastSale.client.ruc}`, 70, 95);
         }
 
         // Table
@@ -208,7 +198,7 @@ const Sales: React.FC = () => {
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: lastSale.client?.name ? 115 : 90,
+            startY: lastSale.client?.ruc ? 102 : 90,
             theme: 'grid',
             headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
             alternateRowStyles: { fillColor: [245, 245, 245] }
@@ -475,29 +465,15 @@ const Sales: React.FC = () => {
                 </div>
 
                 {/* Client Data Section */}
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
-                    <h5 style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--primary)' }}>👤 Datos del Cliente</h5>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>
+                    <h5 style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--primary)' }}>👤 Identificación Cliente</h5>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                         <input
                             type="text"
-                            placeholder="Nombre / Razón Social"
-                            value={clientData.name}
-                            onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="RUC / DNI"
+                            placeholder="RUC / DNI del Cliente"
                             value={clientData.ruc}
-                            onChange={(e) => setClientData({ ...clientData, ruc: e.target.value })}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Dirección"
-                            value={clientData.address}
-                            onChange={(e) => setClientData({ ...clientData, address: e.target.value })}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
+                            onChange={(e) => setClientData({ ruc: e.target.value })}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.85rem' }}
                         />
                     </div>
                 </div>
@@ -637,6 +613,7 @@ const Sales: React.FC = () => {
                         <div style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
                             <p><strong>Fecha:</strong> {new Date(lastSale.date).toLocaleString()}</p>
                             <p><strong>Vendedor:</strong> {lastSale.sellerName}</p>
+                            {lastSale.client?.ruc && <p><strong>DNI/RUC:</strong> {lastSale.client.ruc}</p>}
                         </div>
 
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
@@ -663,11 +640,11 @@ const Sales: React.FC = () => {
                                 <>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>OP. GRAVADA:</span>
-                                        <span>S/ {(lastSale.total * 0.82).toFixed(2)}</span>
+                                        <span>S/ {(lastSale.total / 1.18).toFixed(2)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>IGV (18%):</span>
-                                        <span>S/ {(lastSale.total * 0.18).toFixed(2)}</span>
+                                        <span>S/ {(lastSale.total - (lastSale.total / 1.18)).toFixed(2)}</span>
                                     </div>
                                 </>
                             )}
