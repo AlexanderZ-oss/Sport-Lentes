@@ -250,15 +250,10 @@ const Sales: React.FC = () => {
     const isMobile = window.innerWidth <= 768;
 
     return (
-        <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 380px',
-            gap: isMobile ? '1rem' : '2rem',
-            position: 'relative',
-            height: '100%'
-        }}>
+        <div style={{ height: 'calc(100vh - 100px)', position: 'relative' }}>
             {LoadingIndicator}
-            {/* Mobile Checkout Bar */}
+
+            {/* Mobile Cart Toggle */}
             {isMobile && cart.length > 0 && (
                 <button
                     onClick={() => setIsCartVisible(true)}
@@ -289,7 +284,11 @@ const Sales: React.FC = () => {
                 <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
             )}
 
-            <div style={{ minWidth: 0 }}>
+            <div style={{
+                marginRight: isMobile ? '0' : '400px', // Make space for fixed cart
+                paddingRight: isMobile ? '0' : '2rem',
+                transition: 'margin-right 0.3s ease'
+            }}>
                 {/* Search and Barcode row */}
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
@@ -392,205 +391,118 @@ const Sales: React.FC = () => {
                 </div>
             </div>
 
-            {/* Cart / Summary - Responsive Sidebar/Overlay */}
+            {/* Cart Sidebar - Fixed Right */}
             <div className={`glass-card ${isMobile ? (isCartVisible ? 'cart-visible' : 'cart-hidden') : ''}`} style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: isMobile ? '100%' : '380px',
+                zIndex: isMobile ? 3000 : 1000,
+                backgroundColor: '#1e293b', // Solid background color for visibility
+                borderLeft: '1px solid var(--glass-border)',
                 display: 'flex',
                 flexDirection: 'column',
-                height: isMobile ? '100vh' : 'calc(100vh - 120px)',
-                position: isMobile ? 'fixed' : 'sticky',
-                top: isMobile ? 0 : '20px',
-                right: isMobile ? 0 : 'auto',
-                left: isMobile ? 0 : 'auto',
-                zIndex: isMobile ? 3000 : 100,
-                borderRadius: isMobile ? 0 : '24px',
-                transition: '0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: 'transform 0.3s ease',
                 transform: isMobile && !isCartVisible ? 'translateX(100%)' : 'translateX(0)',
-                visibility: isMobile && !isCartVisible ? 'hidden' : 'visible',
-                overflow: 'hidden', // Contain the scrollable cart
-                border: isMobile ? 'none' : '1px solid var(--glass-border)',
-                background: 'var(--surface)',
-                boxShadow: '-10px 0 30px rgba(0,0,0,0.5)'
+                boxShadow: '-5px 0 25px rgba(0,0,0,0.5)',
+                borderRadius: isMobile ? '0' : '20px 0 0 20px',
+                visibility: isMobile && !isCartVisible ? 'hidden' : 'visible'
             }}>
-                {/* Header - Fixed */}
-                <div style={{ padding: '1.5rem 1.5rem 1rem 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', margin: 0 }}>
-                            <span style={{ fontSize: '1.5rem' }}>🛒</span> Carrito
-                        </h3>
-                        {isMobile && (
-                            <button onClick={() => setIsCartVisible(false)} style={{ background: 'transparent', fontSize: '1.5rem', color: 'white' }}>✕</button>
-                        )}
-                    </div>
-
-                    {/* Middle - Scrollable content */}
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-                        {/* Sale Type & Discount Controls */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>
-                            <h5 style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--primary)' }}>⚙️ Opciones de Venta</h5>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tipo:</span>
-                                <div style={{ display: 'flex', background: 'var(--background)', borderRadius: '10px', padding: '4px', border: '1px solid var(--glass-border)' }}>
-                                    <button
-                                        onClick={() => setSaleType('unit')}
-                                        style={{
-                                            padding: '7px 15px',
-                                            borderRadius: '7px',
-                                            background: saleType === 'unit' ? 'var(--primary)' : 'transparent',
-                                            color: saleType === 'unit' ? 'black' : 'var(--text-muted)',
-                                            fontWeight: '800',
-                                            fontSize: '0.8rem'
-                                        }}
-                                    >
-                                        Unidad
-                                    </button>
-                                    <button
-                                        onClick={() => setSaleType('wholesale')}
-                                        style={{
-                                            padding: '7px 15px',
-                                            borderRadius: '7px',
-                                            background: saleType === 'wholesale' ? 'var(--secondary)' : 'transparent',
-                                            color: saleType === 'wholesale' ? 'white' : 'var(--text-muted)',
-                                            fontWeight: '800',
-                                            fontSize: '0.8rem'
-                                        }}
-                                    >
-                                        Mayor
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '10px' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Desc. (S/):</span>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={discount}
-                                    onChange={(e) => setDiscount(Number(e.target.value))}
-                                    style={{
-                                        flex: 1,
-                                        padding: '8px',
-                                        borderRadius: '8px',
-                                        background: 'var(--background)',
-                                        border: '1px solid var(--glass-border)',
-                                        color: 'white',
-                                        textAlign: 'right',
-                                        fontSize: '1rem',
-                                        fontWeight: 'bold'
-                                    }}
-                                />
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <input
-                                    type="checkbox"
-                                    id="applyIgv"
-                                    checked={applyIgv}
-                                    onChange={(e) => setApplyIgv(e.target.checked)}
-                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                />
-                                <label htmlFor="applyIgv" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                    Separar IGV (18%)
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Client Data Section */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>
-                            <h5 style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--primary)' }}>👤 Identificación Cliente</h5>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                                <input
-                                    type="text"
-                                    placeholder="RUC / DNI del Cliente"
-                                    value={clientData.ruc}
-                                    onChange={(e) => setClientData({ ruc: e.target.value })}
-                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.9rem' }}
-                                />
-                            </div>
-                        </div>
-                        {cart.length === 0 ? (
-                            <div style={{ textAlign: 'center', marginTop: '3rem', color: 'var(--text-muted)' }}>
-                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📥</div>
-                                <p>Carrito vacío</p>
-                            </div>
-                        ) : (
-                            cart.map(item => (
-                                <div key={item.product.id} className="cart-item" style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem', border: '1px solid var(--glass-border)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{item.product.name}</span>
-                                        <button onClick={() => removeFromCart(item.product.id)} style={{ background: 'transparent', color: '#ff4444' }}>✕</button>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <button onClick={() => {
-                                                if (item.quantity > 1) {
-                                                    setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: i.quantity - 1, price: i.price ?? i.product.price } : i));
-                                                }
-                                            }} style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'var(--surface-hover)', color: 'white' }}>-</button>
-                                            <span style={{ minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
-                                            <button onClick={() => addToCart(item.product)} style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'var(--surface-hover)', color: 'white' }}>+</button>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Precio Unit:</div>
-                                            <input
-                                                type="number"
-                                                value={item.price || item.product.price}
-                                                onChange={(e) => {
-                                                    const newPrice = Number(e.target.value);
-                                                    setCart(cart.map(i => i.product.id === item.product.id ? { ...i, price: newPrice } : i));
-                                                }}
-                                                style={{ width: '80px', padding: '4px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'var(--secondary)', fontWeight: 'bold', borderRadius: '4px', textAlign: 'right' }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div style={{ textAlign: 'right', marginTop: '8px', fontWeight: 'bold', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
-                                        Total: S/ {((item.price || item.product.price) * item.quantity).toFixed(2)}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
+                {/* Cart Header */}
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem' }}>
+                        🛒 Nueva Venta
+                    </h3>
+                    {isMobile && (
+                        <button onClick={() => setIsCartVisible(false)} style={{ background: 'transparent', color: 'white', fontSize: '1.5rem' }}>✕</button>
+                    )}
                 </div>
 
-                {/* Footer - Fixed at bottom */}
-                <div style={{
-                    padding: '1.5rem',
-                    background: 'var(--surface)',
-                    borderTop: '2px dashed var(--glass-border)',
-                    boxShadow: '0 -15px 30px rgba(0,0,0,0.3)',
-                    zIndex: 2
-                }}>
-                    {applyIgv && (
-                        <div style={{ marginBottom: '1.2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                <span>Subtotal (OP. GRAVADA):</span>
-                                <span>S/ {(calculateTotal() / 1.18).toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                <span>IGV (18%):</span>
-                                <span>S/ {(calculateTotal() - (calculateTotal() / 1.18)).toFixed(2)}</span>
+                {/* Cart Items & Scrollable Area */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+                    {/* Settings Panel */}
+                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tipo de Venta</span>
+                            <div style={{ display: 'flex', background: 'var(--background)', borderRadius: '8px', padding: '2px' }}>
+                                <button
+                                    onClick={() => setSaleType('unit')}
+                                    style={{ padding: '5px 10px', fontSize: '0.8rem', borderRadius: '6px', background: saleType === 'unit' ? 'var(--primary)' : 'transparent', color: saleType === 'unit' ? 'black' : 'var(--text-muted)' }}
+                                >Unidad</button>
+                                <button
+                                    onClick={() => setSaleType('wholesale')}
+                                    style={{ padding: '5px 10px', fontSize: '0.8rem', borderRadius: '6px', background: saleType === 'wholesale' ? 'var(--secondary)' : 'transparent', color: saleType === 'wholesale' ? 'white' : 'var(--text-muted)' }}
+                                >Mayor</button>
                             </div>
                         </div>
-                    )}
+                        <div style={{ marginBottom: '1rem' }}>
+                            <input
+                                type="text"
+                                placeholder="RUC / DNI Cliente (Opcional)"
+                                value={clientData.ruc}
+                                onChange={(e) => setClientData({ ruc: e.target.value })}
+                                style={{ width: '100%', padding: '8px', fontSize: '0.85rem', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--glass-border)', color: 'white' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                                type="checkbox"
+                                id="applyIgv"
+                                checked={applyIgv}
+                                onChange={(e) => setApplyIgv(e.target.checked)}
+                                style={{ accentColor: 'var(--primary)' }}
+                            />
+                            <label htmlFor="applyIgv" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Separar IGV (18%) en boleta</label>
+                        </div>
+                    </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.7rem', fontWeight: '900', marginBottom: '1.5rem', alignItems: 'center' }}>
-                        <span>TOTAL:</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,229,255,0.05)', padding: '5px 15px', borderRadius: '12px', border: '1px solid rgba(0,229,255,0.2)' }}>
-                            <span style={{ color: 'var(--primary)', fontSize: '1.2rem' }}>S/</span>
+                    {/* Products List */}
+                    {cart.length === 0 ? (
+                        <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)', opacity: 0.7 }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🛍️</div>
+                            <p>Agrega productos para vender</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {cart.map(item => (
+                                <div key={item.product.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'white', maxWidth: '85%' }}>{item.product.name}</span>
+                                        <button onClick={() => removeFromCart(item.product.id)} style={{ color: '#ff4444', background: 'transparent', padding: 0 }}>✕</button>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--background)', borderRadius: '6px', padding: '2px' }}>
+                                            <button onClick={() => {
+                                                if (item.quantity > 1) {
+                                                    setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: i.quantity - 1 } : i));
+                                                }
+                                            }} style={{ width: '24px', height: '24px', background: 'var(--surface-hover)', borderRadius: '4px', color: 'white' }}>-</button>
+                                            <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantity}</span>
+                                            <button onClick={() => addToCart(item.product)} style={{ width: '24px', height: '24px', background: 'var(--surface-hover)', borderRadius: '4px', color: 'white' }}>+</button>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginRight: '5px' }}>Total:</span>
+                                            <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>S/ {((item.price || item.product.price) * item.quantity).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Totals & Pay */}
+                <div style={{ padding: '1.5rem', borderTop: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL A PAGAR:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--background)', padding: '5px 10px', borderRadius: '8px', border: '1px solid var(--primary)' }}>
+                            <span style={{ color: 'var(--primary)', fontWeight: 'bold', marginRight: '5px' }}>S/</span>
                             <input
                                 type="number"
                                 value={calculateTotal().toFixed(2)}
                                 onChange={(e) => handleTotalChange(Number(e.target.value))}
-                                style={{
-                                    width: '130px',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'var(--primary)',
-                                    fontSize: '1.8rem',
-                                    fontWeight: '900',
-                                    textAlign: 'right',
-                                    outline: 'none'
-                                }}
+                                style={{ width: '80px', background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'right', outline: 'none' }}
                             />
                         </div>
                     </div>
@@ -601,17 +513,16 @@ const Sales: React.FC = () => {
                         className="btn-primary"
                         style={{
                             width: '100%',
-                            padding: '1.4rem',
-                            fontSize: '1.3rem',
-                            borderRadius: '15px',
-                            boxShadow: '0 10px 30px rgba(0, 229, 255, 0.4)',
+                            padding: '1rem',
+                            fontSize: '1.1rem',
+                            fontWeight: 'bold',
+                            borderRadius: '10px',
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            gap: '12px',
-                            fontWeight: '900',
-                            textTransform: 'uppercase',
-                            letterSpacing: '1px'
+                            gap: '10px',
+                            opacity: cart.length === 0 ? 0.5 : 1,
+                            cursor: cart.length === 0 ? 'not-allowed' : 'pointer'
                         }}
                     >
                         <span>💳</span> FINALIZAR PAGO
