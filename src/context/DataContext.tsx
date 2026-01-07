@@ -223,11 +223,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const batch = writeBatch(db);
 
             // Add the sale record
-            batch.set(saleRef, {
+            const completedSale = {
                 ...sale,
                 id: saleId,
                 date: new Date().toISOString()
-            });
+            };
+
+            batch.set(saleRef, completedSale);
 
             // Update products stock atomically (Server will handle this when syncing)
             for (const item of sale.items) {
@@ -237,13 +239,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
             }
 
-            await batch.commit();
+            // 🚀 ULTRA-FAST: We don't await the commit and logs to prevent UI "Procesando" lag
+            // Firestore persistence handles the sync in the background
+            batch.commit().catch(e => console.error("Error commiting sale batch:", e));
 
-            await addLog({
+            addLog({
                 user: userName,
                 action: 'Venta Realizada',
                 details: `Venta ID: ${saleId} - Total: S/ ${sale.total} - ${sale.items.length} items`
-            });
+            }).catch(e => console.error("Error adding sale log:", e));
 
             return saleId;
         } catch (e) {

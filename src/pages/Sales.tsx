@@ -146,37 +146,39 @@ const Sales: React.FC = () => {
         };
 
         try {
-            console.log("Intentando procesar venta:", saleData);
+            console.log("Procesando venta de forma ultra-rápida...");
+
+            // addSale returns the ID almost instantly now (non-blocking batch)
             const realSaleId = await addSale(saleData, user?.name || 'Vendedor');
+
+            // UPDATE UI IMMEDIATELY - NO MORE WAITING
             const dataWithId = { ...saleData, id: realSaleId };
             setLastSale(dataWithId);
-
-            // Send to Google Sheets (Background - don't let it block)
-            try {
-                const sheetData = {
-                    id: realSaleId,
-                    date: new Date().toLocaleString(),
-                    total: dataWithId.total,
-                    seller: user?.name || 'Vendedor',
-                    client: clientData.ruc || 'Anonimo',
-                    items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
-                    paymentType: saleType
-                };
-                saveToGoogleSheets(sheetData).catch(err => console.error("Error Sheets:", err));
-            } catch (sheetErr) {
-                console.error("Critical Sheets Error:", sheetErr);
-            }
-
             setCart([]);
             setClientData({ ruc: '' });
             setDiscount(0);
             setShowReceipt(true);
             setIsCartVisible(false);
+
+            // Finalize processing state immediately
+            setIsProcessing(false);
+
+            // Send to Google Sheets strictly in background
+            const sheetData = {
+                id: realSaleId,
+                date: new Date().toLocaleString(),
+                total: dataWithId.total,
+                seller: user?.name || 'Vendedor',
+                client: clientData.ruc || 'Anonimo',
+                items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+                paymentType: saleType
+            };
+            saveToGoogleSheets(sheetData).catch(err => console.error("Error Sheets (silently ignored):", err));
+
         } catch (error: any) {
+            setIsProcessing(false);
             console.error("Detalle del error en venta:", error);
             alert(`⚠️ ERROR AL PROCESAR VENTA: ${error.message || 'No se pudo guardar en la nube'}. Verifica tu conexión.`);
-        } finally {
-            setIsProcessing(false);
         }
     };
 
