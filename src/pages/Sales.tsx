@@ -20,6 +20,7 @@ const Sales: React.FC = () => {
     const [discount, setDiscount] = useState<number>(0);
     const [showScanner, setShowScanner] = useState(false);
     const [isCartVisible, setIsCartVisible] = useState(false); // For mobile cart toggle
+    const [clientData, setClientData] = useState({ ruc: '' });
 
     const [applyIgv, setApplyIgv] = useState(true);
 
@@ -112,8 +113,6 @@ const Sales: React.FC = () => {
         }
     };
 
-    const [clientData, setClientData] = useState({ ruc: '' });
-
     const handleFinalizeSale = async () => {
         if (cart.length === 0) return;
 
@@ -155,8 +154,8 @@ const Sales: React.FC = () => {
         setDiscount(newDiscount);
     };
 
-    const generatePDF = () => {
-        if (!lastSale) return;
+    const createPDFDoc = () => {
+        if (!lastSale) return null;
 
         const doc = new jsPDF();
 
@@ -245,7 +244,22 @@ const Sales: React.FC = () => {
         doc.text("Representación impresa de la Boleta de Venta Electrónica", 105, finalY + 15, { align: "center" });
         doc.text("Gracias por su preferencia", 105, finalY + 20, { align: "center" });
 
-        doc.save(`Boleta_${lastSale.id}.pdf`);
+        return doc;
+    };
+
+    const generatePDF = () => {
+        const doc = createPDFDoc();
+        if (doc) {
+            doc.save(`Boleta_${lastSale.id}.pdf`);
+        }
+    };
+
+    const handlePrint = () => {
+        const doc = createPDFDoc();
+        if (doc) {
+            doc.autoPrint();
+            window.open(doc.output('bloburl'), '_blank');
+        }
     };
 
     const isMobile = window.innerWidth <= 768;
@@ -659,9 +673,15 @@ const Sales: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={generatePDF}
-                                    style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: '#ff4444', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginBottom: '0.5rem' }}
+                                    style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: '#ff4444', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
                                 >
                                     📄 DESCARGAR PDF
+                                </button>
+                                <button
+                                    onClick={handlePrint}
+                                    style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: '#3b82f6', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                                >
+                                    �️ IMPRIMIR
                                 </button>
                                 <button
                                     onClick={() => setShowReceipt(false)}
