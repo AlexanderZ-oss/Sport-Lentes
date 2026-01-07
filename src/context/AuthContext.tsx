@@ -69,9 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Seed if empty ONLY IF it's the first time checking and on network
       if (!hasCheckedInitialUsers && uList.length === 0 && !snapshot.metadata.fromCache) {
         setHasCheckedInitialUsers(true);
-        seedUsers();
-        setIsLoading(false);
-      } else if (uList.length > 0 || snapshot.metadata.fromCache === false) {
+        seedUsers().finally(() => setIsLoading(false));
+      } else {
         setHasCheckedInitialUsers(true);
         setIsLoading(false);
       }
