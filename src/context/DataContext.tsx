@@ -11,7 +11,6 @@ import {
     orderBy,
     writeBatch,
     limit,
-    getDocs,
     setDoc,
     increment,
     runTransaction
@@ -101,7 +100,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
-        const unsubSales = onSnapshot(salesQuery, (snapshot) => {
+        const unsubSales = onSnapshot(salesQuery, { includeMetadataChanges: true }, (snapshot) => {
             const salesData: Sale[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -110,7 +109,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         const logsQuery = query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(50));
-        const unsubLogs = onSnapshot(logsQuery, (snapshot) => {
+        const unsubLogs = onSnapshot(logsQuery, { includeMetadataChanges: true }, (snapshot) => {
             const logsData: ActivityLog[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -118,7 +117,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLogs(logsData);
         });
 
-        const unsubConfig = onSnapshot(doc(db, 'settings', 'app_config'), (snapshot) => {
+        const unsubConfig = onSnapshot(doc(db, 'settings', 'app_config'), { includeMetadataChanges: true }, (snapshot) => {
             if (snapshot.exists()) {
                 setConfig(snapshot.data() as Config);
             }
