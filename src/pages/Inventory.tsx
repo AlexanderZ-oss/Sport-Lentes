@@ -10,6 +10,8 @@ const Inventory: React.FC = () => {
     const [newProduct, setNewProduct] = useState({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
     const [showScanner, setShowScanner] = useState(false);
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -40,6 +42,11 @@ const Inventory: React.FC = () => {
         }
     };
 
+    const filteredProducts = products.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     if (isDataLoading) {
         return (
             <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
@@ -65,11 +72,23 @@ const Inventory: React.FC = () => {
                 <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h3>Gestión de Productos</h3>
-                <button onClick={() => setIsAdding(!isAdding)} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '10px' }}>
-                    {isAdding ? 'Cancelar' : '+ Agregar Producto'}
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', flex: 1, minWidth: '300px', justifyContent: 'flex-end' }}>
+                    <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre o código..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ width: '100%', padding: '10px 12px 10px 40px', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--glass-border)', color: 'white' }}
+                        />
+                    </div>
+                    <button onClick={() => setIsAdding(!isAdding)} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                        {isAdding ? 'Cancelar' : '+ Agregar Producto'}
+                    </button>
+                </div>
             </div>
 
             {isAdding && (
@@ -181,7 +200,7 @@ const Inventory: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {products && Array.isArray(products) && products.map((p: any) => (
+                        {filteredProducts && Array.isArray(filteredProducts) && filteredProducts.map((p: any) => (
                             <tr key={p?.id || Math.random().toString()} style={{ borderBottom: '1px solid var(--glass-border)', transition: '0.3s' }}>
                                 <td style={{ padding: '1rem' }}>
                                     {p?.image ? (

@@ -59,7 +59,7 @@ interface DataContextType {
     syncError: string | null;
     addProduct: (product: Omit<Product, 'id'>, userName: string) => Promise<void>;
     updateStock: (productId: string, quantity: number, userName: string) => Promise<void>;
-    addSale: (sale: Omit<Sale, 'id'>, userName: string) => Promise<void>;
+    addSale: (sale: Omit<Sale, 'id'>, userName: string) => Promise<string>;
     addLog: (log: Omit<ActivityLog, 'id' | 'timestamp'>) => Promise<void>;
     clearSalesData: () => Promise<void>;
     deleteProduct: (productId: string, userName: string) => Promise<void>;
@@ -207,14 +207,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const addSale = async (sale: Omit<Sale, 'id'>, userName: string) => {
+    const addSale = async (sale: Omit<Sale, 'id'>, userName: string): Promise<string> => {
         try {
+            const saleRef = doc(collection(db, 'sales'));
+            const saleId = saleRef.id;
+
             // Use Transaction to ensure stock doesn't go negative and handles concurrency
             await runTransaction(db, async (transaction) => {
-                const saleRef = doc(collection(db, 'sales'));
-
-                // Add the sale record
-                transaction.set(saleRef, { ...sale, date: new Date().toISOString() });
+                // Add the sale record with the explicitly generated ID
+                transaction.set(saleRef, {
+                    ...sale,
+                    id: saleId, // Important: Include the ID in the document data too
+                    date: new Date().toISOString()
+                });
 
                 // Update products stock atomically
                 for (const item of sale.items) {
@@ -228,8 +233,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await addLog({
                 user: userName,
                 action: 'Venta Realizada',
-                details: `Total: S/ ${sale.total} - ${sale.items.length} items`
+                details: `Venta ID: ${saleId} - Total: S/ ${sale.total} - ${sale.items.length} items`
             });
+
+            return saleId;
         } catch (e) {
             console.error("Error processing sale:", e);
             throw e;
@@ -239,11 +246,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const clearSalesData = async () => {
         try {
             const batch = writeBatch(db);
-            sales.forEach(s => { batch.delete(doc(db, 'sales', s.id)); });
-            logs.forEach(l => { batch.delete(doc(db, 'logs', l.id)); });
+
+            // Delete all sales
+            sales.forEach(s => {
+                batch.delete(doc(db, 'sales', s.id));
+            });
+
+            // Delete all logs
+            logs.forEach(l => {
+                batch.delete(doc(db, 'logs', l.id));
+            });
+
             await batch.commit();
+            console.log("Sales and logs cleared successfully via batch");
         } catch (e) {
             console.error("Error clearing data:", e);
+            throw e;
         }
     };
 

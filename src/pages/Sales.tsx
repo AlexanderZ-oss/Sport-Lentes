@@ -119,8 +119,8 @@ const Sales: React.FC = () => {
 
         try {
             console.log("Intentando procesar venta:", saleData);
-            await addSale(saleData, user?.name || 'Vendedor');
-            setLastSale({ ...saleData, id: Math.random().toString(36).substr(2, 9) });
+            const realSaleId = await addSale(saleData, user?.name || 'Vendedor');
+            setLastSale({ ...saleData, id: realSaleId });
             setCart([]);
             setShowReceipt(true);
             setIsCartVisible(false);

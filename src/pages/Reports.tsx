@@ -163,7 +163,7 @@ const Reports: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                sales.slice(-5).reverse().map((sale, idx) => (
+                                sales.slice(0, 5).map((sale, idx) => (
                                     <tr key={sale.id || idx} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                                         <td style={{ padding: '1rem' }}>{new Date(sale.date).toLocaleString()}</td>
                                         <td style={{ padding: '1rem' }}>{sale.items?.length || 0} productos</td>
