@@ -12,7 +12,9 @@ import {
     writeBatch,
     limit,
     getDocs,
-    setDoc
+    setDoc,
+    increment,
+    runTransaction
 } from 'firebase/firestore';
 
 export interface Product {
@@ -168,8 +170,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const productRef = doc(db, 'products', productId);
             const product = products.find(p => p.id === productId);
             if (!product) return;
-            const newStock = Math.max(0, product.stock + quantity);
-            await updateDoc(productRef, { stock: newStock });
+
+            // Atomic Increment: Critical for multi-user safety
+            await updateDoc(productRef, {
+                stock: increment(quantity)
+            });
+
             await addLog({
                 user: userName,
                 action: 'Stock Actualizado',
@@ -177,23 +183,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
         } catch (e) {
             console.error("Error updating stock:", e);
+            throw e;
         }
     };
 
     const addSale = async (sale: Omit<Sale, 'id'>, userName: string) => {
         try {
-            const batch = writeBatch(db);
-            const saleRef = doc(collection(db, 'sales'));
-            batch.set(saleRef, { ...sale, date: new Date().toISOString() });
-            for (const item of sale.items) {
-                const product = products.find(p => p.id === item.productId);
-                if (product) {
+            // Use Transaction to ensure stock doesn't go negative and handles concurrency
+            await runTransaction(db, async (transaction) => {
+                const saleRef = doc(collection(db, 'sales'));
+
+                // Add the sale record
+                transaction.set(saleRef, { ...sale, date: new Date().toISOString() });
+
+                // Update products stock atomically
+                for (const item of sale.items) {
                     const productRef = doc(db, 'products', item.productId);
-                    const newStock = Math.max(0, product.stock - item.quantity);
-                    batch.update(productRef, { stock: newStock });
+                    transaction.update(productRef, {
+                        stock: increment(-item.quantity)
+                    });
                 }
-            }
-            await batch.commit();
+            });
+
             await addLog({
                 user: userName,
                 action: 'Venta Realizada',
