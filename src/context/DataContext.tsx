@@ -80,14 +80,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     useEffect(() => {
-        // Monitor Online Status via Products
-        const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+        // Monitor Online Status via Products - FORCE CLOUD PRIORITY
+        const unsubProducts = onSnapshot(collection(db, 'products'), { includeMetadataChanges: true }, (snapshot) => {
             const prods: Product[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Product));
+
             setProducts(prods);
 
+            // If data is coming from cache and we have no network, we notify
             if (snapshot.metadata.fromCache) {
                 setConnectionStatus('syncing');
             } else {

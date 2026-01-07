@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 2. Load Users from Firestore (Realtime)
-    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'users'), { includeMetadataChanges: true }, (snapshot) => {
       const uList: User[] = snapshot.docs.map(d => ({
         id: d.id,
         ...d.data()
