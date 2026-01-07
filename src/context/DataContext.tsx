@@ -130,20 +130,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, []);
 
-    const seedDatabase = async () => {
-        const snap = await getDocs(collection(db, 'products'));
-        if (!snap.empty) return;
-        const batch = writeBatch(db);
-        const initialProducts = [
-            { code: '1001', name: 'Velocity Racer Neon', price: 299.90, stock: 15, category: 'Running', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=600' },
-            { code: '1002', name: 'Hydro Blue Polarized', price: 349.00, stock: 8, category: 'Acuáticos', image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=600' }
-        ];
-        initialProducts.forEach(p => {
-            const docRef = doc(collection(db, 'products'));
-            batch.set(docRef, p);
-        });
-        await batch.commit();
-    };
+    // Real-time synchronization is handled automatically by the onSnapshot listeners above.
+    // No manual refreshing is ever required.
 
     const addLog = async (log: Omit<ActivityLog, 'id' | 'timestamp'>) => {
         try {
