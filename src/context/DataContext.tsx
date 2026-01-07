@@ -69,6 +69,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [products, setProducts] = useState<Product[]>([]);
     const [sales, setSales] = useState<Sale[]>([]);
     const [logs, setLogs] = useState<ActivityLog[]>([]);
+    const [isDataLoading, setIsDataLoading] = useState(true);
     const [config, setConfig] = useState<Config>({
         ruc: '20601234567',
         address: 'Av. Principal 123, Ciudad',
@@ -95,11 +96,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...doc.data()
             } as Product));
             setProducts(prods);
+
+            // Critical fix: don't seed if we are just loading from cache or network hasn't finished
             if (!hasCheckedInitialProducts && prods.length === 0 && !snapshot.metadata.fromCache) {
                 setHasCheckedInitialProducts(true);
                 seedDatabase();
-            } else {
+            } else if (prods.length > 0 || snapshot.metadata.fromCache === false) {
                 setHasCheckedInitialProducts(true);
+                setIsDataLoading(false);
             }
         });
 
@@ -241,7 +245,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <DataContext.Provider value={{ products, sales, logs, config, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateConfig }}>
-            {children}
+            {isDataLoading && products.length === 0 ? (
+                <div style={{ display: 'flex', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: 'white' }}>
+                    <div className="animate-pulse">Sincronizando Inventario...</div>
+                </div>
+            ) : children}
         </DataContext.Provider>
     );
 };

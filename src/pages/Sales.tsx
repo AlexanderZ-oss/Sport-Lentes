@@ -39,11 +39,10 @@ const Sales: React.FC = () => {
             }
             setCart(cart.map(item =>
                 item.product.id === product.id
-                    ? { ...item, quantity: item.quantity + quantityToAdd, price: priceToUse }
+                    ? { ...item, quantity: item.quantity + quantityToAdd, price: item.price ?? priceToUse }
                     : item
             ));
         } else {
-            console.log(quantityToAdd);
             setCart([...cart, { product, quantity: quantityToAdd, price: priceToUse }]);
         }
     };
@@ -394,7 +393,7 @@ const Sales: React.FC = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <button onClick={() => {
                                             if (item.quantity > 1) {
-                                                setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: i.quantity - 1 } : i));
+                                                setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: i.quantity - 1, price: i.price ?? i.product.price } : i));
                                             }
                                         }} style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'var(--surface-hover)', color: 'white' }}>-</button>
                                         <span style={{ minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>

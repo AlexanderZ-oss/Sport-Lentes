@@ -94,6 +94,10 @@ const LandingPage: React.FC = () => {
                     <img src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=400" alt="Lente 10" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
                     <img src="https://images.unsplash.com/photo-1616147425420-22c608f44d8c?auto=format&fit=crop&q=80&w=400" alt="Lente 11" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
                     <img src="https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&q=80&w=400" alt="Lente 12" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
+                    <img src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400" alt="Lente 13" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
+                    <img src="https://images.unsplash.com/photo-1508296695146-25e7b52a154f?auto=format&fit=crop&q=80&w=400" alt="Lente 14" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
+                    <img src="https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&q=80&w=400" alt="Lente 15" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
+                    <img src="https://images.unsplash.com/photo-1577803645773-f933d55cd051?auto=format&fit=crop&q=80&w=400" alt="Lente 16" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
                 </div>
             </section>
 
