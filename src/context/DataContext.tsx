@@ -97,15 +97,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } as Product));
             setProducts(prods);
 
-            // Critical fix: don't seed if we are just loading from cache or network hasn't finished
+            // If we have data (cache or network), stop loading
+            if (prods.length > 0) {
+                setIsDataLoading(false);
+                setHasCheckedInitialProducts(true);
+            }
+
+            // Seeding logic: only if definitely empty and on first network load
             if (!hasCheckedInitialProducts && prods.length === 0 && !snapshot.metadata.fromCache) {
                 setHasCheckedInitialProducts(true);
                 seedDatabase();
-            } else if (prods.length > 0 || snapshot.metadata.fromCache === false) {
-                setHasCheckedInitialProducts(true);
                 setIsDataLoading(false);
             }
+        }, (error) => {
+            console.error("Firestore error:", error);
+            setIsDataLoading(false); // don't block user on error
         });
+
+        // Safety timeout: 5 seconds max for loading screen
+        const timer = setTimeout(() => {
+            setIsDataLoading(false);
+        }, 5000);
 
         const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
         const unsubSales = onSnapshot(salesQuery, (snapshot) => {
@@ -132,6 +144,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         return () => {
+            clearTimeout(timer);
             unsubProducts();
             unsubSales();
             unsubLogs();

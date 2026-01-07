@@ -64,17 +64,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUsersList(uList);
 
-      // Seed if empty ONLY IF it's the first time checking
+      if (uList.length > 0) {
+        setIsLoading(false);
+        setHasCheckedInitialUsers(true);
+      }
+
+      // Seed if empty ONLY IF it's the first time checking and on network
       if (!hasCheckedInitialUsers && uList.length === 0 && !snapshot.metadata.fromCache) {
         setHasCheckedInitialUsers(true);
         seedUsers();
-      } else if (uList.length > 0 || snapshot.metadata.fromCache === false) {
-        setHasCheckedInitialUsers(true);
         setIsLoading(false);
       }
+    }, (error) => {
+      console.error("Auth sync error", error);
+      setIsLoading(false);
     });
 
-    return () => unsub();
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      unsub();
+    };
   }, []);
 
   const seedUsers = async () => {
