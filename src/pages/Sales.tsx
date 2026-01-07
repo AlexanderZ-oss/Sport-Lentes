@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import BarcodeScanner from '../components/BarcodeScanner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { saveToGoogleSheets } from '../services/googleSheets';
 
 const Sales: React.FC = () => {
     const { products, addSale, config, updateConfig, isDataLoading } = useData();
@@ -135,7 +136,23 @@ const Sales: React.FC = () => {
         try {
             console.log("Intentando procesar venta:", saleData);
             const realSaleId = await addSale(saleData, user?.name || 'Vendedor');
-            setLastSale({ ...saleData, id: realSaleId });
+            const dataWithId = { ...saleData, id: realSaleId };
+            setLastSale(dataWithId);
+
+            // Send to Google Sheets (Background)
+            const sheetData = {
+                id: realSaleId,
+                date: new Date().toLocaleString(),
+                total: calculateTotal(),
+                seller: user?.name || 'Vendedor',
+                client: clientData.ruc || 'Anonimo',
+                items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+                paymentType: saleType
+            };
+            saveToGoogleSheets(sheetData).then(ok => {
+                if (!ok) console.log("Nota: Configurar Google Sheets URL para guardar respaldo.");
+            });
+
             setCart([]);
             setClientData({ ruc: '' }); // Reset client data
             alert("¡Venta Finalizada Exitosamente!");
