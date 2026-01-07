@@ -139,6 +139,7 @@ const Sales: React.FC = () => {
             setLastSale({ ...saleData, id: realSaleId });
             setCart([]);
             setClientData({ ruc: '' }); // Reset client data
+            alert("¡Venta Finalizada Exitosamente!");
             setShowReceipt(true);
             setIsCartVisible(false);
             setDiscount(0);
@@ -478,8 +479,29 @@ const Sales: React.FC = () => {
                                                     setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: i.quantity - 1 } : i));
                                                 }
                                             }} style={{ width: '24px', height: '24px', background: 'var(--surface-hover)', borderRadius: '4px', color: 'white' }}>-</button>
-                                            <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantity}</span>
-                                            <button onClick={() => addToCart(item.product)} style={{ width: '24px', height: '24px', background: 'var(--surface-hover)', borderRadius: '4px', color: 'white' }}>+</button>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    if (val > 0) {
+                                                        if (val > item.product.stock) {
+                                                            alert(`Solo hay ${item.product.stock} unidades en stock`);
+                                                            return;
+                                                        }
+                                                        setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: val } : i));
+                                                    }
+                                                }}
+                                                style={{ width: '40px', textAlign: 'center', background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold' }}
+                                            />
+                                            <button onClick={() => {
+                                                if (item.quantity < item.product.stock) {
+                                                    setCart(cart.map(i => i.product.id === item.product.id ? { ...i, quantity: i.quantity + 1 } : i));
+                                                } else {
+                                                    alert('No hay suficiente stock');
+                                                }
+                                            }} style={{ width: '24px', height: '24px', background: 'var(--surface-hover)', borderRadius: '4px', color: 'white' }}>+</button>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginRight: '5px' }}>Total:</span>
@@ -531,123 +553,127 @@ const Sales: React.FC = () => {
             </div>
 
             {/* Config Modal */}
-            {isConfigModalOpen && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3100 }}>
-                    <div className="glass-card" style={{ width: '90%', maxWidth: '450px', padding: '2.5rem', border: '1px solid var(--primary)' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>Configuración de Empresa</h3>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Nombre de Empresa</label>
-                            <input type="text" value={editingConfig.name} onChange={e => setEditingConfig({ ...editingConfig, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>RUC</label>
-                            <input type="text" value={editingConfig.ruc} onChange={e => setEditingConfig({ ...editingConfig, ruc: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Dirección</label>
-                            <input type="text" value={editingConfig.address} onChange={e => setEditingConfig({ ...editingConfig, address: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
-                        </div>
-                        <div style={{ marginBottom: '2rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Teléfono</label>
-                            <input type="text" value={editingConfig.phone} onChange={e => setEditingConfig({ ...editingConfig, phone: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button onClick={() => setIsConfigModalOpen(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white' }}>Cancelar</button>
-                            <button onClick={() => { updateConfig(editingConfig); setIsConfigModalOpen(false); }} className="btn-primary" style={{ flex: 1, padding: '12px', borderRadius: '8px' }}>Guardar</button>
+            {
+                isConfigModalOpen && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3100 }}>
+                        <div className="glass-card" style={{ width: '90%', maxWidth: '450px', padding: '2.5rem', border: '1px solid var(--primary)' }}>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Configuración de Empresa</h3>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Nombre de Empresa</label>
+                                <input type="text" value={editingConfig.name} onChange={e => setEditingConfig({ ...editingConfig, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>RUC</label>
+                                <input type="text" value={editingConfig.ruc} onChange={e => setEditingConfig({ ...editingConfig, ruc: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Dirección</label>
+                                <input type="text" value={editingConfig.address} onChange={e => setEditingConfig({ ...editingConfig, address: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <div style={{ marginBottom: '2rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Teléfono</label>
+                                <input type="text" value={editingConfig.phone} onChange={e => setEditingConfig({ ...editingConfig, phone: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button onClick={() => setIsConfigModalOpen(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white' }}>Cancelar</button>
+                                <button onClick={() => { updateConfig(editingConfig); setIsConfigModalOpen(false); }} className="btn-primary" style={{ flex: 1, padding: '12px', borderRadius: '8px' }}>Guardar</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Receipt Modal */}
-            {showReceipt && lastSale && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-                    <div className="animate-fade-in" style={{
-                        width: '95%',
-                        maxWidth: '450px',
-                        background: 'white',
-                        color: 'black',
-                        padding: isMobile ? '1.5rem' : '2.5rem',
-                        borderRadius: '20px',
-                        maxHeight: '90vh',
-                        overflowY: 'auto',
-                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-                        position: 'relative'
-                    }}>
-                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ letterSpacing: '2px', color: 'black' }}>{config.name.toUpperCase()}</h2>
-                            <p style={{ fontSize: '0.8rem' }}>RUC: {config.ruc}</p>
-                            <p style={{ fontSize: '0.8rem' }}>{config.address}</p>
-                            <hr style={{ margin: '1rem 0', borderColor: '#eee' }} />
-                            <h3 style={{ margin: '0.5rem 0', color: 'black' }}>BOLETA ELECTRÓNICA</h3>
-                            <p style={{ fontSize: '0.9rem' }}>{lastSale.id?.toUpperCase()}</p>
-                        </div>
+            {
+                showReceipt && lastSale && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(15px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+                        <div className="animate-fade-in" style={{
+                            width: '95%',
+                            maxWidth: '450px',
+                            background: 'white',
+                            color: 'black',
+                            padding: isMobile ? '1.5rem' : '2.5rem',
+                            borderRadius: '20px',
+                            maxHeight: '90vh',
+                            overflowY: 'auto',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                            position: 'relative'
+                        }}>
+                            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ letterSpacing: '2px', color: 'black' }}>{config.name.toUpperCase()}</h2>
+                                <p style={{ fontSize: '0.8rem' }}>RUC: {config.ruc}</p>
+                                <p style={{ fontSize: '0.8rem' }}>{config.address}</p>
+                                <hr style={{ margin: '1rem 0', borderColor: '#eee' }} />
+                                <h3 style={{ margin: '0.5rem 0', color: 'black' }}>BOLETA ELECTRÓNICA</h3>
+                                <p style={{ fontSize: '0.9rem' }}>{lastSale.id?.toUpperCase()}</p>
+                            </div>
 
-                        <div style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-                            <p><strong>Fecha:</strong> {new Date(lastSale.date).toLocaleString()}</p>
-                            <p><strong>Vendedor:</strong> {lastSale.sellerName}</p>
-                            {lastSale.client?.ruc && <p><strong>DNI/RUC:</strong> {lastSale.client.ruc}</p>}
-                        </div>
+                            <div style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                <p><strong>Fecha:</strong> {new Date(lastSale.date).toLocaleString()}</p>
+                                <p><strong>Vendedor:</strong> {lastSale.sellerName}</p>
+                                {lastSale.client?.ruc && <p><strong>DNI/RUC:</strong> {lastSale.client.ruc}</p>}
+                            </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                            <thead style={{ borderBottom: '1px solid black' }}>
-                                <tr>
-                                    <th style={{ textAlign: 'left', padding: '5px 0' }}>Cant.</th>
-                                    <th style={{ textAlign: 'left', padding: '5px 0' }}>Desc.</th>
-                                    <th style={{ textAlign: 'right', padding: '5px 0' }}>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {lastSale.items.map((item: any, idx: number) => (
-                                    <tr key={idx}>
-                                        <td style={{ padding: '5px 0' }}>{item.quantity}</td>
-                                        <td style={{ padding: '5px 0' }}>{item.name}</td>
-                                        <td style={{ textAlign: 'right', padding: '5px 0' }}>S/ {item.price * item.quantity}</td>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                                <thead style={{ borderBottom: '1px solid black' }}>
+                                    <tr>
+                                        <th style={{ textAlign: 'left', padding: '5px 0' }}>Cant.</th>
+                                        <th style={{ textAlign: 'left', padding: '5px 0' }}>Desc.</th>
+                                        <th style={{ textAlign: 'right', padding: '5px 0' }}>Total</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {lastSale.items.map((item: any, idx: number) => (
+                                        <tr key={idx}>
+                                            <td style={{ padding: '5px 0' }}>{item.quantity}</td>
+                                            <td style={{ padding: '5px 0' }}>{item.name}</td>
+                                            <td style={{ textAlign: 'right', padding: '5px 0' }}>S/ {item.price * item.quantity}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-                        <div style={{ borderTop: '1px solid black', paddingTop: '1rem' }}>
-                            {applyIgv && (
-                                <>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>OP. GRAVADA:</span>
-                                        <span>S/ {(lastSale.total / 1.18).toFixed(2)}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>IGV (18%):</span>
-                                        <span>S/ {(lastSale.total - (lastSale.total / 1.18)).toFixed(2)}</span>
-                                    </div>
-                                </>
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 'bold', marginTop: '0.5rem' }}>
-                                <span>TOTAL:</span>
-                                <span>S/ {lastSale.total.toFixed(2)}</span>
+                            <div style={{ borderTop: '1px solid black', paddingTop: '1rem' }}>
+                                {applyIgv && (
+                                    <>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>OP. GRAVADA:</span>
+                                            <span>S/ {(lastSale.total / 1.18).toFixed(2)}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>IGV (18%):</span>
+                                            <span>S/ {(lastSale.total - (lastSale.total / 1.18)).toFixed(2)}</span>
+                                        </div>
+                                    </>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 'bold', marginTop: '0.5rem' }}>
+                                    <span>TOTAL:</span>
+                                    <span>S/ {lastSale.total.toFixed(2)}</span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                            <p style={{ fontSize: '0.8rem' }}>¡Gracias por su compra!</p>
-                            <div style={{ margin: '1rem 0', padding: '10px', background: '#f5f5f5', fontSize: '0.7rem' }}>
-                                Escanee el código QR para validar su comprobante
+                            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                                <p style={{ fontSize: '0.8rem' }}>¡Gracias por su compra!</p>
+                                <div style={{ margin: '1rem 0', padding: '10px', background: '#f5f5f5', fontSize: '0.7rem' }}>
+                                    Escanee el código QR para validar su comprobante
+                                </div>
+                                <button
+                                    onClick={generatePDF}
+                                    style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: '#ff4444', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginBottom: '0.5rem' }}
+                                >
+                                    📄 DESCARGAR PDF
+                                </button>
+                                <button
+                                    onClick={() => setShowReceipt(false)}
+                                    style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: 'black', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                                >
+                                    CERRAR Y CONTINUAR
+                                </button>
                             </div>
-                            <button
-                                onClick={generatePDF}
-                                style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: '#ff4444', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginBottom: '0.5rem' }}
-                            >
-                                📄 DESCARGAR PDF
-                            </button>
-                            <button
-                                onClick={() => setShowReceipt(false)}
-                                style={{ marginTop: '0.5rem', width: '100%', padding: '12px', background: 'black', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
-                            >
-                                CERRAR Y CONTINUAR
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style>{`
                 .product-card:hover {
@@ -663,7 +689,7 @@ const Sales: React.FC = () => {
                     to { transform: translateX(0); opacity: 1; }
                 }
             `}</style>
-        </div>
+        </div >
     );
 };
 
