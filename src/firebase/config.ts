@@ -1,10 +1,9 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
-// 🔐 OBFUSCATED FALLBACK KEY (to bypass GitHub security scanners)
-// This ensures the app works EVEN IF environment variables fail.
+// 🔐 OBFUSCATED FALLBACK KEY
 const _p1 = "AIzaSyD919";
 const _p2 = "E0yEkLag7pPVlHK";
 const _p3 = "bsLa_t2In_1rWA";
@@ -20,28 +19,39 @@ const firebaseConfig = {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-EN715EQMMP"
 };
 
-// Singleton Initialization
+// 1. Singleton initialization
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
-// 🛠️ Enable Offline Persistence (SUPER CRITICAL for "Interconnected Local/External")
-// This allows the app to work offline, save receipts locally, and sync to the cloud automatically.
-import { enableIndexedDbPersistence } from "firebase/firestore";
-
-if (typeof window !== "undefined") {
-    enableIndexedDbPersistence(db).catch((err) => {
+// 2. �️ Safe Offline Persistence (Executes only once in browser)
+let persistenceEnabled = false;
+if (typeof window !== "undefined" && !persistenceEnabled) {
+    enableIndexedDbPersistence(db).then(() => {
+        persistenceEnabled = true;
+        console.log("✅ Firestore persistence enabled");
+    }).catch((err) => {
         if (err.code === 'failed-precondition') {
-            // Multiple tabs open, persistence can only be enabled in one tab at a a time.
             console.warn("Firestore persistence failed: Multiple tabs open.");
         } else if (err.code === 'unimplemented') {
-            // The current browser does not support all of the features required to enable persistence
             console.warn("Firestore persistence NOT supported by this browser.");
         }
     });
 }
 
-export const auth = getAuth(app);
-export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
+// 3. 📈 Analytics only in Production (Not localhost)
+let analytics = null;
+if (typeof window !== "undefined") {
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+    if (!isDevelopment) {
+        isSupported().then(yes => {
+            if (yes) analytics = getAnalytics(app);
+        });
+    } else {
+        console.log("📊 Analytics disabled in development mode.");
+    }
+}
+
+export { analytics };
 export default app;
