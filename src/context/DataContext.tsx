@@ -63,10 +63,26 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Helper to validate UUID
+const isValidUUID = (uuid: string) => {
+    const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return regex.test(uuid);
+};
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [products, setProducts] = useState<Product[]>(() => {
         const saved = localStorage.getItem('sport_lentes_products');
-        return saved ? JSON.parse(saved) : [];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Filter out legacy data with non-UUID IDs (e.g., "1", "2")
+                return Array.isArray(parsed) ? parsed.filter((p: any) => isValidUUID(p.id)) : [];
+            } catch (e) {
+                console.error("Error parsing saved products:", e);
+                return [];
+            }
+        }
+        return [];
     });
     const [sales, setSales] = useState<Sale[]>(() => {
         const saved = localStorage.getItem('sport_lentes_sales');
@@ -366,6 +382,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Actualizar stock de productos
             for (const item of sale.items) {
+                // Skip if product ID is not a valid UUID (prevents "invalid input syntax for type uuid")
+                if (!isValidUUID(item.productId)) {
+                    console.warn(`Skipping stock update for invalid product ID: ${item.productId}`);
+                    continue;
+                }
+
                 const product = products.find(p => p.id === item.productId);
                 if (product) {
                     await supabase
