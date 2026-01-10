@@ -123,8 +123,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (salesError) throw salesError;
 
                 if (salesData) {
-                    setSales(salesData);
-                    localStorage.setItem('sport_lentes_sales', JSON.stringify(salesData));
+                    const mappedSales = salesData.map((s: any) => ({
+                        id: s.id,
+                        date: s.date,
+                        items: s.items,
+                        total: Number(s.total),
+                        sellerId: s.seller_id,
+                        sellerName: s.seller_name,
+                        client: s.client,
+                        saleType: s.sale_type,
+                        discount: Number(s.discount || 0)
+                    }));
+                    setSales(mappedSales);
+                    localStorage.setItem('sport_lentes_sales', JSON.stringify(mappedSales));
                 }
 
                 // Cargar logs
@@ -195,7 +206,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.log('Sales change:', payload);
 
                 if (payload.eventType === 'INSERT') {
-                    setSales(prev => [payload.new as Sale, ...prev]);
+                    const newSale = payload.new as any;
+                    const mappedSale: Sale = {
+                        id: newSale.id,
+                        date: newSale.date,
+                        items: newSale.items,
+                        total: Number(newSale.total),
+                        sellerId: newSale.seller_id,
+                        sellerName: newSale.seller_name,
+                        client: newSale.client,
+                        saleType: newSale.sale_type,
+                        discount: Number(newSale.discount || 0)
+                    };
+                    setSales(prev => [mappedSale, ...prev]);
                 } else if (payload.eventType === 'DELETE') {
                     setSales(prev => prev.filter(s => s.id !== payload.old.id));
                 }
@@ -321,9 +344,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 date: new Date().toISOString()
             };
 
+            // Mapear a snake_case para Supabase
+            const saleToInsert = {
+                date: completedSale.date,
+                items: completedSale.items,
+                total: completedSale.total,
+                seller_id: completedSale.sellerId,
+                seller_name: completedSale.sellerName,
+                client: completedSale.client,
+                sale_type: completedSale.saleType,
+                discount: completedSale.discount
+            };
+
             const { data, error } = await supabase
                 .from('sales')
-                .insert([completedSale])
+                .insert([saleToInsert])
                 .select()
                 .single();
 
