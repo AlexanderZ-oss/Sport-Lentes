@@ -82,23 +82,36 @@ const LandingPage: React.FC = () => {
             {/* Gallery Section */}
             <section style={{ padding: '60px 5%' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '3rem' }}>Nuestra <span className="gradient-text">Colección</span></h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                    <img src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400" alt="Lente 1" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1577803645773-f933d55cd051?auto=format&fit=crop&q=80&w=400" alt="Lente 2" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1625591339762-430970bb6221?auto=format&fit=crop&q=80&w=400" alt="Lente 3" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1508296695146-25e7b52a154f?auto=format&fit=crop&q=80&w=400" alt="Lente 4" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://plus.unsplash.com/premium_photo-1675715923985-782f9479b1d3?auto=format&fit=crop&q=80&w=400" alt="Lente 5" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1591076482161-421a3aaee5f7?auto=format&fit=crop&q=80&w=400" alt="Lente 6" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1556306535-0f09a537f0a3?auto=format&fit=crop&q=80&w=400" alt="Lente 7" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&q=80&w=400" alt="Lente 8" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1516802273409-68526ee1bdd6?auto=format&fit=crop&q=80&w=400" alt="Lente 9" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=400" alt="Lente 10" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1616147425420-22c608f44d8c?auto=format&fit=crop&q=80&w=400" alt="Lente 11" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&q=80&w=400" alt="Lente 12" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400" alt="Lente 13" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1508296695146-25e7b52a154f?auto=format&fit=crop&q=80&w=400" alt="Lente 14" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&q=80&w=400" alt="Lente 15" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
-                    <img src="https://images.unsplash.com/photo-1577803645773-f933d55cd051?auto=format&fit=crop&q=80&w=400" alt="Lente 16" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '15px' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                    {[
+                        // IDs de Unsplash específicos de lentes ópticos, deportivos y de sol
+                        '1574258269985-8c50ac1b5e3b', // Lentes deportivos
+                        '1509695507497-de37dc6c8c80', // Gafas de sol aviator
+                        '1577803645773-f933d55cd051', // Colección de lentes
+                        '1483412033650-1015ddeb83d1', // Lentes de sol wayfarer
+                        '1511499767150-a48a237f0083', // Lentes ópticos modernos
+                        '1473496169904-658ba7c44d8a', // Lentes de diseñador
+                        '1584036533827-e7e4e5d2b8a0', // Lentes deportivos para ciclismo
+                        '1614715838832-61dfdffb97b5', // Gafas redondas vintage
+                        '1559056199-641a0ac8b55e', // Colección de lentes ópticos
+                        '1501196354995-cbb51c65aaea', // Lentes de sol fashion
+                        '1572635196237-14b3f281503f', // Lentes para deportes acuáticos
+                        '1591076482161-421a3aaee5f7', // Lentes de sol premium
+                        '1508296695146-25e7b52a154f', // Gafas rectangulares
+                        '1516706059273-0498da1704ea', // Lentes cat-eye mujer
+                        '1614715838301-c8b57122a0e4', // Lentes redondos con montura metálica
+                        '1582142306909-195724d6f15b'  // Lentes deportivos polarizados
+                    ].map((id, index) => (
+                        <div key={index} className="glass-card" style={{ padding: '0', overflow: 'hidden', height: '300px' }}>
+                            <img
+                                src={`https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=600`}
+                                alt={`Lente ${index + 1}`}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.5s transform' }}
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                        </div>
+                    ))}
                 </div>
             </section>
 

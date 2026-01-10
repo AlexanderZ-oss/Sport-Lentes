@@ -1,29 +1,47 @@
 # 📚 Guía de Desarrollo - Sport Lentes
 
+---
+
+## ⚠️ IMPORTANTE: CONFIGURACIÓN DE BASE DE DATOS
+
+Esta aplicación ahora usa **Supabase** como base de datos (migrado desde Firebase).
+
+**👉 ANTES DE INICIAR, debes configurar Supabase:**
+
+1. Lee la guía completa en **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
+2. Crea tu proyecto en [supabase.com](https://supabase.com)
+3. Ejecuta el script SQL en `supabase-schema.sql`
+4. Configura tus credenciales en el archivo `.env`
+
+Sin este paso, la aplicación NO funcionará correctamente.
+
+---
+
 ## 🚀 Inicio Rápido
 
-### Instalación
+### 1. Instalación
 ```bash
 npm install
 ```
 
-### Desarrollo
+### 2. Configurar Base de Datos
+Sigue las instrucciones en **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
+
+### 3. Desarrollo
 ```bash
 npm run dev
 ```
 Abre [http://localhost:5173](http://localhost:5173)
 
-### Construcción para Producción
+### 4. Construcción para Producción
 ```bash
 npm run build
 ```
 
-### Preview de Producción
+### 5. Preview de Producción
 ```bash
 npm run preview
 ```
-
----
 
 ## 🔐 Credenciales por Defecto
 
@@ -104,6 +122,7 @@ src/
 
 ## 🛠️ Tecnologías Utilizadas
 
+### Frontend
 - **React 18** - Framework principal
 - **TypeScript** - Type safety
 - **Vite** - Build tool
@@ -112,6 +131,13 @@ src/
 - **Recharts** - Gráficos
 - **jsPDF** - Generación de PDFs
 - **html5-qrcode** - Escaneo de códigos
+
+### Backend / Base de Datos
+- **Supabase** - Base de datos PostgreSQL en la nube
+  - Sincronización en tiempo real
+  - API REST automática
+  - Autenticación integrada
+  - Almacenamiento de archivos
 
 ---
 

@@ -1,18 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { STORAGE_KEYS, DEFAULT_USERS } from '../constants';
-import { db } from '../firebase/config';
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  deleteDoc,
-  onSnapshot,
-  getDocs,
-  writeBatch,
-  query,
-  where
-} from 'firebase/firestore';
+import { supabase } from '../supabase/config';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export type Role = 'admin' | 'employee' | null;
 
@@ -35,6 +24,7 @@ interface AuthContextType {
   deleteUser: (id: string) => Promise<void>;
   toggleUserStatus: (id: string) => Promise<void>;
   updateUser: (id: string, updates: Partial<User>) => Promise<void>;
+  isAuthOnline: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasCheckedInitialUsers, setHasCheckedInitialUsers] = useState(false);
 
   useEffect(() => {
-    // 1. Load Session (keep session local to the browser)
+    // 1. Load Session from LocalStorage
     const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
     if (savedUser) {
       try {
@@ -57,112 +47,133 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 2. Load Users from Firestore (Realtime)
-    const unsub = onSnapshot(collection(db, 'users'), { includeMetadataChanges: true }, (snapshot) => {
-      const uList: User[] = snapshot.docs.map(d => ({
-        id: d.id,
-        ...d.data()
-      } as User));
+    let usersChannel: RealtimeChannel | null = null;
 
-      setUsersList(uList);
-      setIsAuthOnline(!snapshot.metadata.fromCache || uList.length > 0);
+    const initializeAuth = async () => {
+      try {
+        setIsLoading(true);
 
-      // Seed if empty ONLY IF it's the first time checking and on network
-      if (!hasCheckedInitialUsers && uList.length === 0 && !snapshot.metadata.fromCache) {
-        setHasCheckedInitialUsers(true);
-        seedUsers().finally(() => setIsLoading(false));
-      } else {
-        setHasCheckedInitialUsers(true);
+        // 2. Load Users from Supabase
+        const { data, error } = await supabase
+          .from('users')
+          .select('*');
+
+        if (error) throw error;
+
+        if (data) {
+          setUsersList(data as User[]);
+          setIsAuthOnline(true);
+
+          // Seed if empty
+          if (!hasCheckedInitialUsers && data.length === 0) {
+            setHasCheckedInitialUsers(true);
+            await seedUsers();
+          } else {
+            setHasCheckedInitialUsers(true);
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error", error);
+        setIsAuthOnline(false);
+      } finally {
         setIsLoading(false);
       }
-    }, (error) => {
-      console.error("Auth sync error", error);
-      setIsLoading(false);
-      setIsAuthOnline(false);
-    });
+    };
 
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
+    initializeAuth();
+
+    // 3. Realtime Subscription for Users
+    usersChannel = supabase
+      .channel('public:users')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setUsersList(prev => [...prev, payload.new as User]);
+        } else if (payload.eventType === 'UPDATE') {
+          setUsersList(prev => prev.map(u => u.id === payload.new.id ? payload.new as User : u));
+        } else if (payload.eventType === 'DELETE') {
+          setUsersList(prev => prev.filter(u => u.id !== payload.old.id));
+        }
+      })
+      .subscribe();
 
     return () => {
-      clearTimeout(timer);
-      unsub();
+      if (usersChannel) supabase.removeChannel(usersChannel);
     };
   }, []);
 
   const seedUsers = async () => {
-    // Force check: Ensure the corporate admin exists. 
-    const adminQuery = query(collection(db, 'users'), where('username', '==', 'sportlents@gmail.com'));
-    const adminSnap = await getDocs(adminQuery);
+    try {
+      // Check if super admin exists
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', 'sportlents@gmail.com')
+        .single();
 
-    if (adminSnap.empty) {
-      console.log("Corporate admin missing. seeding system users...");
-      const batch = writeBatch(db);
-      DEFAULT_USERS.forEach(u => {
-        const docRef = doc(collection(db, 'users'));
-        batch.set(docRef, { ...u, id: docRef.id });
-      });
-      await batch.commit();
-      console.log("System initialized with default users");
-    } else {
-      console.log("System already initialized. Skipping seed.");
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (!data) {
+        console.log("Seeding default users to Supabase...");
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert(DEFAULT_USERS);
+
+        if (insertError) throw insertError;
+        console.log("Default users seeded successfully");
+      }
+    } catch (e) {
+      console.error("Error seeding users:", e);
     }
   };
 
   const login = async (username: string, pass: string): Promise<boolean> => {
     console.log("Login attempt:", username);
 
-    // 1. Check loaded Cache (usersList)
+    // 1. Check local usersList first for speed
     const cachedUser = usersList.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === pass);
     if (cachedUser) {
       if (cachedUser.status !== 'active') {
-        console.warn("User inactive");
+        alert("Usuario inactivo");
         return false;
       }
-      console.log("Login success (Cache)");
       const { password, ...safeUser } = cachedUser;
       setUser(safeUser as User);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(safeUser));
       return true;
     }
 
-    // 2. Direct Firestore Query (in case cache is empty/slow)
+    // 2. Direct Supabase Query
     try {
-      const q = query(
-        collection(db, 'users'),
-        where('username', '==', username),
-        where('password', '==', pass)
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const docData = snapshot.docs[0].data() as User;
-        // Case insensitive check just in case, though query handled exact match
-        if (docData.status !== 'active') return false;
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', pass)
+        .single();
 
-        console.log("Login success (Direct DB)");
-        const { password, ...safeUser } = { ...docData, id: snapshot.docs[0].id };
+      if (error) throw error;
+
+      if (data) {
+        if (data.status !== 'active') {
+          alert("Usuario inactivo");
+          return false;
+        }
+        const { password, ...safeUser } = data;
         setUser(safeUser as User);
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(safeUser));
-
-        // If we found it here but not in cache, force a re-fetch or assume snapshot will catch up
         return true;
       }
     } catch (e) {
-      console.error("Direct DB Login failed:", e);
+      console.error("Supabase Login failed:", e);
     }
 
-    // 3. Fallback / Emergency (Hardcoded Admin)
-    // Only allows if no users exist in DB or DB is unreachable, ensuring we don't lock out the owner
-    const defaultUser = DEFAULT_USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === pass);
-    if (defaultUser) {
-      console.log("Login success (Emergency Fallback)");
-      setUser(defaultUser as User);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(defaultUser));
-
-      // Background: Attempt to seed this user to DB so next time it works significantly
-      seedUsers();
-
+    // 3. Last Fallback (Hardcoded defaults)
+    const fallbackUser = DEFAULT_USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === pass);
+    if (fallbackUser) {
+      const { password, ...safeUser } = fallbackUser;
+      setUser(safeUser as User);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(safeUser));
+      seedUsers(); // Background seed
       return true;
     }
 
@@ -171,25 +182,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addUser = async (newUser: Omit<User, 'id'>) => {
     try {
-      // Note: Storing passwords in plain text is insecure. 
-      // For a real app, integrate Firebase Auth directly.
-      const docRef = await addDoc(collection(db, 'users'), {
-        ...newUser,
-        status: 'active'
-      });
-      // We don't need to manually update state/localstorage, onSnapshot handles it.
-      // But we might want to update the doc with its own ID if we rely on it inside the object
-      await updateDoc(docRef, { id: docRef.id });
+      const { error } = await supabase
+        .from('users')
+        .insert([newUser]);
+      if (error) throw error;
     } catch (e) {
       console.error("Error adding user", e);
+      throw e;
     }
   };
 
   const deleteUser = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'users', id));
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
     } catch (e) {
       console.error("Error deleting user", e);
+      throw e;
     }
   };
 
@@ -198,7 +210,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const u = usersList.find(user => user.id === id);
       if (u) {
         const newStatus = u.status === 'active' ? 'inactive' : 'active';
-        await updateDoc(doc(db, 'users', id), { status: newStatus });
+        const { error } = await supabase
+          .from('users')
+          .update({ status: newStatus })
+          .eq('id', id);
+        if (error) throw error;
       }
     } catch (e) {
       console.error("Error toggling status", e);
@@ -207,7 +223,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     try {
-      await updateDoc(doc(db, 'users', id), updates);
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
     } catch (e) {
       console.error("Error updating user", e);
       throw e;
@@ -220,7 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, usersList, login, logout, isLoading, addUser, deleteUser, toggleUserStatus, updateUser }}>
+    <AuthContext.Provider value={{ user, usersList, login, logout, isLoading, addUser, deleteUser, toggleUserStatus, updateUser, isAuthOnline }}>
       <div style={{ position: 'fixed', bottom: '35px', right: '10px', zIndex: 9999, pointerEvents: 'none' }}>
         <div style={{
           padding: '5px 12px',
@@ -232,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           border: `1px solid ${isAuthOnline ? 'rgba(0, 229, 255, 0.2)' : 'rgba(255, 0, 0, 0.2)'}`,
           backdropFilter: 'blur(5px)'
         }}>
-          {isAuthOnline ? '● SESIÓN SINCRONIZADA' : '○ ERROR AUTH NUBE'}
+          {isAuthOnline ? '● AUTH SUPABASE OK' : '○ ERROR AUTH SUPABASE'}
         </div>
       </div>
       {children}

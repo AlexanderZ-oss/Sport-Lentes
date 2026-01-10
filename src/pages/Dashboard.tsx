@@ -8,13 +8,14 @@ import Sales from './Sales';
 import Reports from './Reports';
 import Users from './Users';
 import Monitoring from './Monitoring';
+import AdminSettings from './AdminSettings';
 
 import Logo from '../components/Logo';
 
 const Dashboard: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'inventory' | 'sales' | 'reports' | 'users' | 'monitoring'>('sales');
+    const [activeTab, setActiveTab] = useState<'inventory' | 'sales' | 'reports' | 'users' | 'monitoring' | 'settings'>('sales');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     if (!user) {
@@ -40,6 +41,7 @@ const Dashboard: React.FC = () => {
                 case 'reports': return user.role === 'admin' ? <Reports /> : <Sales />;
                 case 'users': return user.role === 'admin' ? <Users /> : <Sales />;
                 case 'monitoring': return user.role === 'admin' ? <Monitoring /> : <Sales />;
+                case 'settings': return user.role === 'admin' ? <AdminSettings /> : <Sales />;
                 default: return <Sales />;
             }
         } catch (error) {
@@ -197,6 +199,24 @@ const Dashboard: React.FC = () => {
                                 >
                                     <span style={{ fontSize: '1.4rem' }}>👥</span> Usuarios
                                 </li>
+                                <li
+                                    onClick={() => handleTabChange('settings')}
+                                    style={{
+                                        padding: '15px 20px',
+                                        borderRadius: '12px',
+                                        marginBottom: '0.8rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        background: activeTab === 'settings' ? 'var(--secondary)' : 'transparent',
+                                        color: activeTab === 'settings' ? 'white' : 'var(--text-muted)',
+                                        transition: '0.3s',
+                                        fontWeight: '700'
+                                    }}
+                                >
+                                    <span style={{ fontSize: '1.4rem' }}>⚙️</span> Ajustes
+                                </li>
                             </>
                         )}
                     </ul>
@@ -267,6 +287,7 @@ const Dashboard: React.FC = () => {
                             {activeTab === 'reports' && 'Análisis y Reportes'}
                             {activeTab === 'users' && 'Control de Usuarios'}
                             {activeTab === 'monitoring' && 'Monitoreo de Empleados'}
+                            {activeTab === 'settings' && 'Ajustes del Sistema'}
                         </h2>
                         <p style={{ color: 'var(--text-muted)', marginTop: '5px' }}>
                             Gestiona tu óptica con precisión y eficiencia.

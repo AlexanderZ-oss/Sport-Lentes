@@ -1,19 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '../firebase/config';
-import {
-    collection,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    doc,
-    onSnapshot,
-    query,
-    orderBy,
-    writeBatch,
-    limit,
-    setDoc,
-    increment
-} from 'firebase/firestore';
+import { supabase } from '../supabase/config';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface Product {
     id: string;
@@ -63,6 +50,7 @@ interface DataContextType {
     config: Config;
     isDataLoading: boolean;
     syncError: string | null;
+    connectionStatus: 'online' | 'syncing' | 'offline';
     addProduct: (product: Omit<Product, 'id'>, userName: string) => Promise<void>;
     updateStock: (productId: string, quantity: number, userName: string) => Promise<void>;
     addSale: (sale: Omit<Sale, 'id'>, userName: string) => Promise<string>;
@@ -88,9 +76,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const saved = localStorage.getItem('sport_lentes_logs');
         return saved ? JSON.parse(saved) : [];
     });
-    const [isDataLoading, setIsDataLoading] = useState(false);
-    const [syncError, setSyncError] = useState<string | null>(null);
-    const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
     const [config, setConfig] = useState<Config>(() => {
         const saved = localStorage.getItem('sport_lentes_config');
         return saved ? JSON.parse(saved) : {
@@ -100,108 +85,222 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: 'Sport Lentes'
         };
     });
+    const [isDataLoading, setIsDataLoading] = useState(true);
+    const [syncError, setSyncError] = useState<string | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState<'online' | 'syncing' | 'offline'>('syncing');
 
+    // Subscriptions
     useEffect(() => {
-        // Monitor Online Status via Products - ULTRA-AGGRESSIVE SYNC
-        const unsubProducts = onSnapshot(collection(db, 'products'), { includeMetadataChanges: true }, (snapshot) => {
-            const prods: Product[] = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as Product));
+        let productsChannel: RealtimeChannel | null = null;
+        let salesChannel: RealtimeChannel | null = null;
+        let logsChannel: RealtimeChannel | null = null;
+        let configChannel: RealtimeChannel | null = null;
 
-            // Only update if there is data OR we are 100% online
-            if (prods.length > 0 || !snapshot.metadata.fromCache) {
-                setProducts([...prods]);
-                localStorage.setItem('sport_lentes_products', JSON.stringify(prods));
-            }
-
-            setIsDataLoading(false);
-            setSyncError(null);
-
-            if (snapshot.metadata.fromCache) {
+        const initializeData = async () => {
+            try {
+                setIsDataLoading(true);
                 setConnectionStatus('syncing');
-            } else {
+
+                // Cargar productos
+                const { data: productsData, error: productsError } = await supabase
+                    .from('products')
+                    .select('*')
+                    .order('name');
+
+                if (productsError) throw productsError;
+
+                if (productsData) {
+                    setProducts(productsData);
+                    localStorage.setItem('sport_lentes_products', JSON.stringify(productsData));
+                }
+
+                // Cargar ventas
+                const { data: salesData, error: salesError } = await supabase
+                    .from('sales')
+                    .select('*')
+                    .order('date', { ascending: false });
+
+                if (salesError) throw salesError;
+
+                if (salesData) {
+                    setSales(salesData);
+                    localStorage.setItem('sport_lentes_sales', JSON.stringify(salesData));
+                }
+
+                // Cargar logs
+                const { data: logsData, error: logsError } = await supabase
+                    .from('logs')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(50);
+
+                if (logsError) throw logsError;
+
+                if (logsData) {
+                    setLogs(logsData);
+                    localStorage.setItem('sport_lentes_logs', JSON.stringify(logsData));
+                }
+
+                // Cargar configuración
+                const { data: configData, error: configError } = await supabase
+                    .from('settings')
+                    .select('*')
+                    .eq('id', 'app_config')
+                    .single();
+
+                if (!configError && configData) {
+                    const newConfig = {
+                        ruc: configData.ruc,
+                        address: configData.address,
+                        phone: configData.phone,
+                        name: configData.name
+                    };
+                    setConfig(newConfig);
+                    localStorage.setItem('sport_lentes_config', JSON.stringify(newConfig));
+                }
+
                 setConnectionStatus('online');
-            }
-        }, (error) => {
-            console.error("Firestore error (Products):", error);
-            setSyncError(error.message);
-            setConnectionStatus('offline');
-            setIsDataLoading(false);
-        });
-
-        const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'));
-        const unsubSales = onSnapshot(salesQuery, { includeMetadataChanges: true }, (snapshot) => {
-            const salesData: Sale[] = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as Sale));
-            setSales(salesData);
-            localStorage.setItem('sport_lentes_sales', JSON.stringify(salesData));
-            setSyncError(null);
-        }, (error) => setSyncError(error.message));
-
-        const logsQuery = query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(50));
-        const unsubLogs = onSnapshot(logsQuery, { includeMetadataChanges: true }, (snapshot) => {
-            const logsData: ActivityLog[] = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as ActivityLog));
-            setLogs(logsData);
-            localStorage.setItem('sport_lentes_logs', JSON.stringify(logsData));
-            setSyncError(null);
-        }, (error) => setSyncError(error.message));
-
-        const unsubConfig = onSnapshot(doc(db, 'settings', 'app_config'), { includeMetadataChanges: true }, (snapshot) => {
-            if (snapshot.exists()) {
-                const confData = snapshot.data() as Config;
-                setConfig(confData);
-                localStorage.setItem('sport_lentes_config', JSON.stringify(confData));
                 setSyncError(null);
+            } catch (error: any) {
+                console.error('Error loading data:', error);
+                setSyncError(error.message);
+                setConnectionStatus('offline');
+            } finally {
+                setIsDataLoading(false);
             }
-        }, (error) => setSyncError(error.message));
+        };
 
+        initializeData();
+
+        // Suscribirse a cambios en tiempo real - Productos
+        productsChannel = supabase
+            .channel('products-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+                console.log('Products change:', payload);
+
+                if (payload.eventType === 'INSERT') {
+                    setProducts(prev => [...prev, payload.new as Product]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setProducts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Product : p));
+                } else if (payload.eventType === 'DELETE') {
+                    setProducts(prev => prev.filter(p => p.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        // Suscribirse a cambios en tiempo real - Ventas
+        salesChannel = supabase
+            .channel('sales-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, (payload) => {
+                console.log('Sales change:', payload);
+
+                if (payload.eventType === 'INSERT') {
+                    setSales(prev => [payload.new as Sale, ...prev]);
+                } else if (payload.eventType === 'DELETE') {
+                    setSales(prev => prev.filter(s => s.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        // Suscribirse a cambios en tiempo real - Logs
+        logsChannel = supabase
+            .channel('logs-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setLogs(prev => [payload.new as ActivityLog, ...prev.slice(0, 49)]);
+                } else if (payload.eventType === 'DELETE') {
+                    setLogs(prev => prev.filter(l => l.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        // Suscribirse a cambios en tiempo real - Configuración
+        configChannel = supabase
+            .channel('settings-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (payload) => {
+                if (payload.new && typeof payload.new === 'object') {
+                    const data = payload.new as any;
+                    const newConfig: Config = {
+                        ruc: data.ruc || config.ruc,
+                        address: data.address || config.address,
+                        phone: data.phone || config.phone,
+                        name: data.name || config.name
+                    };
+                    setConfig(newConfig);
+                    localStorage.setItem('sport_lentes_config', JSON.stringify(newConfig));
+                }
+            })
+            .subscribe();
+
+        // Cleanup
         return () => {
-            unsubProducts();
-            unsubSales();
-            unsubLogs();
-            unsubConfig();
+            if (productsChannel) supabase.removeChannel(productsChannel);
+            if (salesChannel) supabase.removeChannel(salesChannel);
+            if (logsChannel) supabase.removeChannel(logsChannel);
+            if (configChannel) supabase.removeChannel(configChannel);
         };
     }, []);
 
-    // Real-time synchronization is handled automatically by the onSnapshot listeners above.
-    // No manual refreshing is ever required.
+    // Actualizar localStorage cuando cambien los datos
+    useEffect(() => {
+        localStorage.setItem('sport_lentes_products', JSON.stringify(products));
+    }, [products]);
+
+    useEffect(() => {
+        localStorage.setItem('sport_lentes_sales', JSON.stringify(sales));
+    }, [sales]);
+
+    useEffect(() => {
+        localStorage.setItem('sport_lentes_logs', JSON.stringify(logs));
+    }, [logs]);
 
     const addLog = async (log: Omit<ActivityLog, 'id' | 'timestamp'>) => {
         try {
-            await addDoc(collection(db, 'logs'), {
-                ...log,
-                timestamp: new Date().toISOString()
-            });
+            const { error } = await supabase
+                .from('logs')
+                .insert([{
+                    ...log,
+                    timestamp: new Date().toISOString()
+                }]);
+
+            if (error) throw error;
         } catch (e) {
-            console.error("Error adding log:", e);
+            console.error('Error adding log:', e);
         }
     };
 
     const addProduct = async (product: Omit<Product, 'id'>, userName: string) => {
         try {
-            await addDoc(collection(db, 'products'), product);
-            await addLog({ user: userName, action: 'Producto Agregado', details: `${product.name} (${product.code})` });
+            const { error } = await supabase
+                .from('products')
+                .insert([product]);
+
+            if (error) throw error;
+
+            await addLog({
+                user: userName,
+                action: 'Producto Agregado',
+                details: `${product.name} (${product.code})`
+            });
         } catch (e) {
-            console.error("Error adding product:", e);
+            console.error('Error adding product:', e);
+            throw e;
         }
     };
 
     const updateStock = async (productId: string, quantity: number, userName: string) => {
         try {
-            const productRef = doc(db, 'products', productId);
             const product = products.find(p => p.id === productId);
             if (!product) return;
 
-            // Atomic Increment: Critical for multi-user safety
-            await updateDoc(productRef, {
-                stock: increment(quantity)
-            });
+            const newStock = product.stock + quantity;
+
+            const { error } = await supabase
+                .from('products')
+                .update({ stock: newStock })
+                .eq('id', productId);
+
+            if (error) throw error;
 
             await addLog({
                 user: userName,
@@ -209,86 +308,85 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 details: `${product.name}: ${quantity > 0 ? '+' : ''}${quantity}`
             });
         } catch (e) {
-            console.error("Error updating stock:", e);
+            console.error('Error updating stock:', e);
             throw e;
         }
     };
 
     const addSale = async (sale: Omit<Sale, 'id'>, userName: string): Promise<string> => {
         try {
-            const saleRef = doc(collection(db, 'sales'));
-            const saleId = saleRef.id;
-
-            // Use writeBatch instead of runTransaction to support OFFLINE sales (Receipts ready without internet)
-            const batch = writeBatch(db);
-
-            // Add the sale record
+            // Crear la venta
             const completedSale = {
                 ...sale,
-                id: saleId,
                 date: new Date().toISOString()
             };
 
-            batch.set(saleRef, completedSale);
+            const { data, error } = await supabase
+                .from('sales')
+                .insert([completedSale])
+                .select()
+                .single();
 
-            // Update products stock atomically (Server will handle this when syncing)
+            if (error) throw error;
+
+            // Actualizar stock de productos
             for (const item of sale.items) {
-                const productRef = doc(db, 'products', item.productId);
-                batch.update(productRef, {
-                    stock: increment(-item.quantity)
-                });
+                const product = products.find(p => p.id === item.productId);
+                if (product) {
+                    await supabase
+                        .from('products')
+                        .update({ stock: product.stock - item.quantity })
+                        .eq('id', item.productId);
+                }
             }
 
-            // 🚀 ULTRA-FAST: We don't await the commit and logs to prevent UI "Procesando" lag
-            // Firestore persistence handles the sync in the background
-            batch.commit().catch(e => console.error("Error commiting sale batch:", e));
-
+            // Agregar log
             addLog({
                 user: userName,
                 action: 'Venta Realizada',
-                details: `Venta ID: ${saleId} - Total: S/ ${sale.total} - ${sale.items.length} items`
-            }).catch(e => console.error("Error adding sale log:", e));
+                details: `Venta ID: ${data.id} - Total: S/ ${sale.total} - ${sale.items.length} items`
+            }).catch(e => console.error('Error adding sale log:', e));
 
-            return saleId;
+            return data.id;
         } catch (e) {
-            console.error("Error processing sale:", e);
+            console.error('Error processing sale:', e);
             throw e;
         }
     };
 
     const clearSalesData = async () => {
         try {
-            const batch = writeBatch(db);
+            // Eliminar todas las ventas
+            const { error: salesError } = await supabase
+                .from('sales')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // Eliminar todo
 
-            // Delete all sales
-            sales.forEach(s => {
-                batch.delete(doc(db, 'sales', s.id));
-            });
+            if (salesError) throw salesError;
 
-            // Delete all logs
-            logs.forEach(l => {
-                batch.delete(doc(db, 'logs', l.id));
-            });
+            // Eliminar todos los logs
+            const { error: logsError } = await supabase
+                .from('logs')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // Eliminar todo
 
-            await batch.commit();
-            console.log("Sales and logs cleared successfully via batch");
+            if (logsError) throw logsError;
         } catch (e) {
-            console.error("Error clearing data:", e);
+            console.error('Error clearing data:', e);
             throw e;
         }
     };
 
     const deleteProduct = async (productId: string, userName: string) => {
-        // 🚀 Optimistic UI: Remove from local state immediately
-        // This fulfills the "must be permitted" and "local database" feel
-        const originalProducts = [...products];
-        setProducts(prev => prev.filter(p => p.id !== productId));
-
         try {
-            const product = originalProducts.find(p => p.id === productId);
+            const product = products.find(p => p.id === productId);
 
-            // Attempt cloud deletion
-            await deleteDoc(doc(db, 'products', productId));
+            const { error } = await supabase
+                .from('products')
+                .delete()
+                .eq('id', productId);
+
+            if (error) throw error;
 
             if (product) {
                 await addLog({
@@ -297,21 +395,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     details: `${product.name} (${product.code})`
                 });
             }
-        } catch (e: any) {
-            console.error("Error deleting product from cloud:", e);
-            // If it's a permission error, we might want to alert, 
-            // but the user specifically said it MUST be permitted.
-            // In a local-first approach, we keep it deleted locally.
-            // Revert only if it's a critical non-permission error? 
-            // For now, let's keep the optimistic delete.
+        } catch (e) {
+            console.error('Error deleting product:', e);
+            throw e;
         }
     };
+
     const updateProduct = async (productId: string, updates: Partial<Product>, userName: string) => {
         try {
-            const productRef = doc(db, 'products', productId);
             const product = products.find(p => p.id === productId);
 
-            await updateDoc(productRef, updates);
+            const { error } = await supabase
+                .from('products')
+                .update(updates)
+                .eq('id', productId);
+
+            if (error) throw error;
 
             if (product) {
                 await addLog({
@@ -321,22 +420,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
             }
         } catch (e) {
-            console.error("Error updating product:", e);
+            console.error('Error updating product:', e);
             throw e;
         }
     };
 
     const updateConfig = async (newConfig: Config) => {
         try {
-            await setDoc(doc(db, 'settings', 'app_config'), newConfig);
+            const { error } = await supabase
+                .from('settings')
+                .upsert([{ id: 'app_config', ...newConfig }]);
+
+            if (error) throw error;
         } catch (e) {
-            console.error("Error updating config:", e);
+            console.error('Error updating config:', e);
+            throw e;
         }
     };
 
     const getStatusStyles = () => {
         switch (connectionStatus) {
-            case 'online': return { bg: 'rgba(0, 255, 0, 0.1)', color: '#44ff44', text: '● NUBE EN LÍNEA', border: 'rgba(0, 255, 0, 0.2)' };
+            case 'online': return { bg: 'rgba(0, 255, 0, 0.1)', color: '#44ff44', text: '● SUPABASE EN LÍNEA', border: 'rgba(0, 255, 0, 0.2)' };
             case 'syncing': return { bg: 'rgba(0, 229, 255, 0.1)', color: 'var(--primary)', text: '○ SINCRONIZANDO...', border: 'rgba(0, 229, 255, 0.2)' };
             case 'offline': return { bg: 'rgba(255, 0, 0, 0.1)', color: '#ff4444', text: '✖ ERROR DE RED', border: 'rgba(255, 0, 0, 0.2)' };
         }
@@ -345,7 +449,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const styles = getStatusStyles();
 
     return (
-        <DataContext.Provider value={{ products, sales, logs, config, isDataLoading, syncError, addProduct, updateStock, addSale, addLog, clearSalesData, deleteProduct, updateProduct, updateConfig }}>
+        <DataContext.Provider value={{
+            products,
+            sales,
+            logs,
+            config,
+            isDataLoading,
+            syncError,
+            connectionStatus,
+            addProduct,
+            updateStock,
+            addSale,
+            addLog,
+            clearSalesData,
+            deleteProduct,
+            updateProduct,
+            updateConfig
+        }}>
             <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
                 {syncError && (
                     <div style={{
@@ -360,7 +480,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         maxWidth: '250px',
                         pointerEvents: 'auto'
                     }}>
-                        ⚠️ ERROR DE NUBE: {syncError === 'Missing or insufficient permissions.' ? 'REGLAS BLOQUEADAS' : syncError}
+                        ⚠️ ERROR: {syncError}
                     </div>
                 )}
                 <div style={{
@@ -371,7 +491,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     color: 'rgba(255,255,255,0.5)',
                     backdropFilter: 'blur(2px)'
                 }}>
-                    NUBE ID: {products.length} PRODUCTOS SYNC
+                    SUPABASE: {products.length} PRODUCTOS SYNC
                 </div>
                 <div style={{
                     padding: '5px 12px',
