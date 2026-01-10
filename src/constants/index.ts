@@ -20,9 +20,10 @@ export const SECURITY = {
 } as const;
 
 // Default Credentials
+// Default Credentials with valid UUIDs for Database Compatibility
 export const DEFAULT_USERS = [
     {
-        id: '1',
+        id: '27c4fb4e-5e36-479e-a6a9-826315848201', // Formerly '1'
         username: 'sportlents@gmail.com',
         password: '123',
         role: 'admin' as const,
@@ -30,7 +31,7 @@ export const DEFAULT_USERS = [
         status: 'active' as const
     },
     {
-        id: '2',
+        id: '27c4fb4e-5e36-479e-a6a9-826315848202', // Formerly '2'
         username: 'admin',
         password: '123',
         role: 'admin' as const,
@@ -38,7 +39,7 @@ export const DEFAULT_USERS = [
         status: 'active' as const
     },
     {
-        id: '3',
+        id: '27c4fb4e-5e36-479e-a6a9-826315848203', // Formerly '3'
         username: 'empleado',
         password: '123',
         role: 'employee' as const,
