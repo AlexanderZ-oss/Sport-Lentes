@@ -236,7 +236,7 @@ const Inventory: React.FC = () => {
                 </div>
             )}
 
-            <div className="glass-card" style={{ padding: 0, overflow: 'hidden', borderRadius: '15px' }}>
+            <div className="glass-card" style={{ padding: 0, overflow: 'auto', borderRadius: '15px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
                         <tr>

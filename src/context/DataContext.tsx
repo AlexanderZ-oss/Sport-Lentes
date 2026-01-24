@@ -41,6 +41,7 @@ export interface Config {
     address: string;
     phone: string;
     name: string;
+    galleryImages?: string[];
 }
 
 interface DataContextType {
@@ -63,6 +64,26 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Default images fallback
+const DEFAULT_GALLERY = [
+    '1574258269985-8c50ac1b5e3b',
+    '1509695507497-de37dc6c8c80',
+    '1577803645773-f933d55cd051',
+    '1483412033650-1015ddeb83d1',
+    '1511499767150-a48a237f0083',
+    '1473496169904-658ba7c44d8a',
+    '1584036533827-e7e4e5d2b8a0',
+    '1614715838832-61dfdffb97b5',
+    '1559056199-641a0ac8b55e',
+    '1501196354995-cbb51c65aaea',
+    '1572635196237-14b3f281503f',
+    '1591076482161-421a3aaee5f7',
+    '1508296695146-25e7b52a154f',
+    '1516706059273-0498da1704ea',
+    '1614715838301-c8b57122a0e4',
+    '1582142306909-195724d6f15b'
+];
+
 // Helper to validate UUID
 const isValidUUID = (uuid: string) => {
     const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -75,7 +96,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                // Filter out legacy data with non-UUID IDs (e.g., "1", "2")
                 return Array.isArray(parsed) ? parsed.filter((p: any) => isValidUUID(p.id)) : [];
             } catch (e) {
                 console.error("Error parsing saved products:", e);
@@ -98,7 +118,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ruc: '20601234567',
             address: 'Av. Principal 123, Ciudad',
             phone: '+51 951 955 969',
-            name: 'Sport Lentes'
+            name: 'Sport Lentes',
+            galleryImages: DEFAULT_GALLERY
         };
     });
     const [isDataLoading, setIsDataLoading] = useState(true);
@@ -180,7 +201,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         ruc: configData.ruc,
                         address: configData.address,
                         phone: configData.phone,
-                        name: configData.name
+                        name: configData.name,
+                        galleryImages: configData.gallery_images || DEFAULT_GALLERY
                     };
                     setConfig(newConfig);
                     localStorage.setItem('sport_lentes_config', JSON.stringify(newConfig));
@@ -263,7 +285,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         ruc: data.ruc || config.ruc,
                         address: data.address || config.address,
                         phone: data.phone || config.phone,
-                        name: data.name || config.name
+                        name: data.name || config.name,
+                        galleryImages: data.gallery_images || DEFAULT_GALLERY
                     };
                     setConfig(newConfig);
                     localStorage.setItem('sport_lentes_config', JSON.stringify(newConfig));

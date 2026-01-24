@@ -78,7 +78,7 @@ const Reports: React.FC = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h3>Dashboard Financiero</h3>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <button onClick={downloadReport} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -146,7 +146,7 @@ const Reports: React.FC = () => {
 
             <div style={{ marginTop: '2rem' }}>
                 <h4 style={{ marginBottom: '1.5rem' }}>Últimas Transacciones</h4>
-                <div className="glass-card" style={{ padding: 0 }}>
+                <div className="glass-card" style={{ padding: 0, overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
                             <tr>

@@ -48,7 +48,7 @@ const AdminSettings: React.FC = () => {
                 .single();
 
             if (!error && data) {
-                setTestResult({ success: true, message: '✅ Conexión Exitosa: Base de datos Supabase operativa y sincronizada.' });
+                setTestResult({ success: true, message: '✅ Conexión Exitosa: Base de datos operativa y sincronizada.' });
                 setAutoReconnect(false);
             } else if (error && error.code === 'PGRST116') {
                 setTestResult({ success: true, message: '✅ Conexión Establecida (Creando configuración inicial...)' });
@@ -60,7 +60,7 @@ const AdminSettings: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Test connection error:", error);
-            const errorMsg = error.message || 'No se pudo contactar con Supabase.';
+            const errorMsg = error.message || 'No se pudo contactar con la base de datos.';
 
             if (retryCount < 3 && autoReconnect) {
                 setTestResult({ success: false, message: `⚠️ Reintentando conexión... (${retryCount + 1}/3)` });
@@ -126,11 +126,85 @@ const AdminSettings: React.FC = () => {
                         />
                     </div>
                 </div>
+                <div style={{ marginTop: '2rem', borderTop: '1px solid var(--glass-border)', paddingTop: '2rem' }}>
+                    <h4 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>📸 Gestión de Galería</h4>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                        Agrega IDs de Unsplash o URLs completas de las imágenes que deseas mostrar en la página principal.
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
+                        <input
+                            type="text"
+                            placeholder="Ej: 1574258269985-8c50ac1b5e3b (Unsplash ID) o https://..."
+                            id="newImageInput"
+                            style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'var(--background)', border: '1px solid var(--glass-border)', color: 'white' }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const input = e.target as HTMLInputElement;
+                                    if (input.value.trim()) {
+                                        const newImages = [...(editingConfig.galleryImages || []), input.value.trim()];
+                                        setEditingConfig({ ...editingConfig, galleryImages: newImages });
+                                        input.value = '';
+                                    }
+                                }
+                            }}
+                        />
+                        <button
+                            className="btn-primary"
+                            onClick={() => {
+                                const input = document.getElementById('newImageInput') as HTMLInputElement;
+                                if (input.value.trim()) {
+                                    const newImages = [...(editingConfig.galleryImages || []), input.value.trim()];
+                                    setEditingConfig({ ...editingConfig, galleryImages: newImages });
+                                    input.value = '';
+                                }
+                            }}
+                            style={{ padding: '0 1.5rem' }}
+                        >
+                            + Agregar
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px', maxHeight: '300px', overflowY: 'auto', paddingRight: '5px' }}>
+                        {(editingConfig.galleryImages || []).map((img, index) => (
+                            <div key={index} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                                <img
+                                    src={img.startsWith('http') ? img : `https://images.unsplash.com/photo-${img}?auto=format&fit=crop&q=80&w=200`}
+                                    alt={`Gallery ${index}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        const newImages = (editingConfig.galleryImages || []).filter((_, i) => i !== index);
+                                        setEditingConfig({ ...editingConfig, galleryImages: newImages });
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '5px',
+                                        right: '5px',
+                                        background: 'rgba(255, 0, 0, 0.7)',
+                                        color: 'white',
+                                        borderRadius: '50%',
+                                        width: '24px',
+                                        height: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
                 <button
                     onClick={handleSave}
                     className="btn-primary"
-                    style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
+                    style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginTop: '2rem' }}
                 >
                     Guardar Cambios Globales
                 </button>
@@ -141,7 +215,7 @@ const AdminSettings: React.FC = () => {
                     🌐 Estado de Infraestructura
                 </h3>
                 <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                    Verifica si la aplicación tiene acceso a la base de datos de Supabase en tiempo real.
+                    Verifica si la aplicación tiene acceso a la base de datos en tiempo real.
                 </p>
 
                 <div style={{
@@ -163,7 +237,7 @@ const AdminSettings: React.FC = () => {
                             color: 'var(--primary)',
                             fontSize: '0.8rem',
                             fontWeight: 'bold'
-                        }}>SUPABASE CLOUD UNIT</span>
+                        }}>EN LÍNEA</span>
                     </div>
 
                     {testResult && (
@@ -181,7 +255,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 <button
-                    onClick={testConnection}
+                    onClick={() => testConnection()}
                     disabled={isTesting}
                     style={{
                         width: '100%',
@@ -196,7 +270,7 @@ const AdminSettings: React.FC = () => {
                         marginBottom: '1rem'
                     }}
                 >
-                    {isTesting ? '🔄 Verificando...' : '📡 Probar Conexión a Supabase'}
+                    {isTesting ? '🔄 Verificando...' : '📡 Probar Conexión'}
                 </button>
 
                 <button

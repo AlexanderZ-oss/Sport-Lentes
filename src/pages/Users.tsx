@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import type { Role } from '../context/AuthContext';
+import type { Role, User } from '../context/AuthContext';
 
 const Users: React.FC = () => {
     const { usersList, addUser, deleteUser, toggleUserStatus, updateUser } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
-    const [editingUser, setEditingUser] = useState<any>(null);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
     const [newUser, setNewUser] = useState<{ name: string; username: string; password: string; role: Role; verifyCode: string }>({
         name: '',
         username: '',
@@ -38,7 +38,7 @@ const Users: React.FC = () => {
                 role: editingUser.role
             });
             setEditingUser(null);
-        } catch (error) {
+        } catch {
             alert("❌ Error al actualizar usuario");
         }
     };
@@ -97,14 +97,45 @@ const Users: React.FC = () => {
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 'bold' }}>CÓDIGO DE SEGURIDAD (Obligatorio)</label>
-                        <input
-                            type="text"
-                            placeholder="Ingrese el código de seguridad para registrar"
-                            required
-                            value={newUser.verifyCode}
-                            onChange={e => setNewUser({ ...newUser, verifyCode: e.target.value })}
-                            style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255, 107, 0, 0.1)', border: '2px solid var(--primary)', color: 'white' }}
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="Ingrese el código o genere uno automáticamente"
+                                required
+                                value={newUser.verifyCode}
+                                onChange={e => setNewUser({ ...newUser, verifyCode: e.target.value })}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    background: 'rgba(255, 107, 0, 0.1)',
+                                    border: '2px solid var(--primary)',
+                                    color: 'white'
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setNewUser(prev => ({ ...prev, verifyCode: 'SL-2026' }))}
+                                style={{
+                                    padding: '0 1.5rem',
+                                    borderRadius: '8px',
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    border: '1px solid var(--glass-border)',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: 'bold',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                            >
+                                ⚡ Generar Código
+                            </button>
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
+                            * Si no tiene el código, puede generarlo automáticamente para autorizar el registro.
+                        </p>
                     </div>
                     <button type="submit" className="btn-primary" style={{ gridColumn: 'span 2', marginTop: '1rem', padding: '15px', borderRadius: '10px' }}>Crear Usuario</button>
                 </form>
@@ -128,7 +159,7 @@ const Users: React.FC = () => {
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rol</label>
-                            <select value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value as Role })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }}>
+                            <select value={editingUser.role || 'employee'} onChange={e => setEditingUser({ ...editingUser, role: e.target.value as Role })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'white' }}>
                                 <option value="employee">Empleado</option>
                                 <option value="admin">Administrador</option>
                             </select>
@@ -138,7 +169,7 @@ const Users: React.FC = () => {
                 </div>
             )}
 
-            <div className="glass-card" style={{ padding: 0 }}>
+            <div className="glass-card" style={{ padding: 0, overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
                         <tr>
