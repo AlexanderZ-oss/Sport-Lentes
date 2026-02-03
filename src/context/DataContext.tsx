@@ -333,10 +333,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const addProduct = async (product: Omit<Product, 'id'>, userName: string) => {
         try {
-            // 1. Validar si el código ya existe localmente para evitar error de UNIQUE en la DB
-            const exists = products.find(p => p.code === product.code);
+            // 1. Validar si el nombre ya existe localmente para evitar error de UNIQUE en la DB
+            const exists = products.find(p => p.name.toLowerCase() === product.name.toLowerCase());
             if (exists) {
-                throw new Error(`El código de barras "${product.code}" ya está registrado con el producto: ${exists.name}`);
+                throw new Error(`El producto con nombre "${product.name}" ya está registrado. Por favor use un nombre diferente.`);
             }
 
             // 2. Intentar insertar en Supabase
@@ -346,9 +346,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) {
                 console.error('Supabase error inserting product:', error);
-                // Si el error es de duplicado (por si acaso falló la validación local)
+                // Si el error es de duplicado
                 if (error.code === '23505') {
-                    throw new Error(`Error de base de datos: El código "${product.code}" ya está en uso.`);
+                    throw new Error(`Error de base de datos: El nombre "${product.name}" ya está en uso.`);
                 }
                 throw new Error(error.message || 'Error desconocido al guardar en la base de datos.');
             }
@@ -503,6 +503,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const product = products.find(p => p.id === productId);
 
+            if (updates.name) {
+                const nameExists = products.find(p => p.id !== productId && p.name.toLowerCase() === updates.name?.toLowerCase());
+                if (nameExists) {
+                    throw new Error(`Ya existe otro producto con el nombre "${updates.name}".`);
+                }
+            }
+
             const { error } = await supabase
                 .from('products')
                 .update(updates)
@@ -510,6 +517,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) {
                 console.error('Supabase error updating product:', error);
+                if (error.code === '23505') {
+                    throw new Error(`Error de base de datos: El nombre ya está en uso por otro producto.`);
+                }
                 throw new Error(error.message || 'Error al actualizar producto en la base de datos.');
             }
 
