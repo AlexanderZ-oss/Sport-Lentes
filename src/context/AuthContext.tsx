@@ -103,23 +103,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const seedUsers = async () => {
     try {
-      // Check if super admin exists
-      const { data, error } = await supabase
+      // Check if users table is empty
+      const { data, error, count } = await supabase
         .from('users')
-        .select('id')
-        .eq('username', 'sportlents@gmail.com')
-        .single();
+        .select('id', { count: 'exact', head: true });
 
-      if (error && error.code !== 'PGRST116') throw error;
+      // Si hay error y NO es porque no hay datos, lanzar error
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error checking users:", error);
+        return;
+      }
 
-      if (!data) {
+      // Si la tabla está vacía, insertar usuarios por defecto
+      if (count === 0 || !data || data.length === 0) {
         console.log("Seeding default users to Supabase...");
         const { error: insertError } = await supabase
           .from('users')
           .insert(DEFAULT_USERS);
 
-        if (insertError) throw insertError;
-        console.log("Default users seeded successfully");
+        if (insertError) {
+          console.error("Error seeding users:", insertError);
+        } else {
+          console.log("Default users seeded successfully");
+        }
       }
     } catch (e) {
       console.error("Error seeding users:", e);

@@ -18,8 +18,9 @@ const Inventory: React.FC = () => {
             await addProduct(newProduct, user?.name || 'Sistema');
             setIsAdding(false);
             setNewProduct({ name: '', code: '', price: 0, stock: 0, category: 'General', image: '' });
-        } catch (error) {
-            alert("⚠️ ERROR CRÍTICO: No se pudo guardar en la nube. Revisa tu conexión a internet.");
+        } catch (error: any) {
+            const errorMessage = error.message || "Error desconocido al guardar en la nube.";
+            alert(`⚠️ ERROR AL GUARDAR: ${errorMessage}`);
             console.error(error);
         }
     };
@@ -34,6 +35,12 @@ const Inventory: React.FC = () => {
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Limitar tamaño de imagen (ej: 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("⚠️ La imagen es demasiado pesada (máximo 2MB). Por favor, usa una imagen más pequeña.");
+                return;
+            }
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 setNewProduct(prev => ({ ...prev, image: reader.result as string }));
@@ -62,8 +69,8 @@ const Inventory: React.FC = () => {
                 image: editingProduct.image
             }, user?.name || 'Sistema');
             setEditingProduct(null);
-        } catch (error) {
-            alert("❌ Error al actualizar producto");
+        } catch (error: any) {
+            alert(`❌ Error al actualizar producto: ${error.message || ''}`);
         }
     };
 

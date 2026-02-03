@@ -7,13 +7,19 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
+        persistSession: false,  // Deshabilitado para evitar conflictos con múltiples usuarios
+        autoRefreshToken: false,  // No necesitamos tokens de Supabase Auth
+        detectSessionInUrl: false,  // No detectar sesiones en la URL
+        storage: undefined  // No guardar sesiones en localStorage
     },
     realtime: {
         params: {
             eventsPerSecond: 10
+        }
+    },
+    global: {
+        headers: {
+            'x-application-name': 'sport-lentes'
         }
     }
 });

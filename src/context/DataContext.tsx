@@ -333,27 +333,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const addProduct = async (product: Omit<Product, 'id'>, userName: string) => {
         try {
+            // 1. Validar si el código ya existe localmente para evitar error de UNIQUE en la DB
+            const exists = products.find(p => p.code === product.code);
+            if (exists) {
+                throw new Error(`El código de barras "${product.code}" ya está registrado con el producto: ${exists.name}`);
+            }
+
+            // 2. Intentar insertar en Supabase
             const { error } = await supabase
                 .from('products')
                 .insert([product]);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error inserting product:', error);
+                // Si el error es de duplicado (por si acaso falló la validación local)
+                if (error.code === '23505') {
+                    throw new Error(`Error de base de datos: El código "${product.code}" ya está en uso.`);
+                }
+                throw new Error(error.message || 'Error desconocido al guardar en la base de datos.');
+            }
 
+            // 3. Agregar log de actividad
             await addLog({
                 user: userName,
                 action: 'Producto Agregado',
                 details: `${product.name} (${product.code})`
             });
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error adding product:', e);
-            throw e;
+            throw e; // Relanzamos el error con el mensaje descriptivo
         }
     };
 
     const updateStock = async (productId: string, quantity: number, userName: string) => {
         try {
             const product = products.find(p => p.id === productId);
-            if (!product) return;
+            if (!product) throw new Error("Producto no encontrado localmente.");
 
             const newStock = product.stock + quantity;
 
@@ -362,14 +377,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .update({ stock: newStock })
                 .eq('id', productId);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error updating stock:', error);
+                throw new Error(error.message || 'Error al actualizar stock en la base de datos.');
+            }
 
             await addLog({
                 user: userName,
                 action: 'Stock Actualizado',
                 details: `${product.name}: ${quantity > 0 ? '+' : ''}${quantity}`
             });
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error updating stock:', e);
             throw e;
         }
@@ -490,7 +508,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .update(updates)
                 .eq('id', productId);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error updating product:', error);
+                throw new Error(error.message || 'Error al actualizar producto en la base de datos.');
+            }
 
             if (product) {
                 await addLog({
@@ -499,7 +520,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     details: `${product.name} - Cambios: ${Object.keys(updates).join(', ')}`
                 });
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error updating product:', e);
             throw e;
         }

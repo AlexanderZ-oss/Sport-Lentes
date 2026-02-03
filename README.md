@@ -17,6 +17,23 @@ Sin este paso, la aplicación NO funcionará correctamente.
 
 ---
 
+## 🔧 PROBLEMA RESUELTO: Acceso con Diferentes Cuentas
+
+**Si la aplicación solo funciona con una cuenta específica:**
+
+✅ **Este problema ha sido CORREGIDO** en la última actualización.
+
+📖 **Lee las instrucciones completas en:** [INSTRUCCIONES_RAPIDAS.md](./INSTRUCCIONES_RAPIDAS.md)
+
+**Resumen de la solución:**
+1. Ejecuta el script SQL en `fix-rls-policies.sql` en Supabase
+2. Limpia las sesiones del navegador con `clear-sessions.js`
+3. Actualiza la página
+
+Para diagnóstico automático, ejecuta `diagnostico.js` en la consola del navegador.
+
+---
+
 ## 🚀 Inicio Rápido
 
 ### 1. Instalación
