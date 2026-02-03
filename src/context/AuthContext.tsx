@@ -58,7 +58,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .from('users')
           .select('*');
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error loading users from Supabase:", error);
+          setIsAuthOnline(false);
+          // Intentar seed aunque haya error (podría ser tabla vacía)
+          if (!hasCheckedInitialUsers) {
+            setHasCheckedInitialUsers(true);
+            await seedUsers();
+          }
+          return;
+        }
+
+        console.log("Users loaded from Supabase:", data?.length || 0, "users");
 
         if (data) {
           setUsersList(data as User[]);
@@ -67,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Seed if empty
           if (!hasCheckedInitialUsers && data.length === 0) {
             setHasCheckedInitialUsers(true);
+            console.log("Table is empty, seeding default users...");
             await seedUsers();
           } else {
             setHasCheckedInitialUsers(true);
@@ -104,27 +116,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const seedUsers = async () => {
     try {
       // Check if users table is empty
-      const { data, error, count } = await supabase
+      const { data: existingUsers, error } = await supabase
         .from('users')
-        .select('id', { count: 'exact', head: true });
+        .select('*');
 
-      // Si hay error y NO es porque no hay datos, lanzar error
-      if (error && error.code !== 'PGRST116') {
+      // Si hay error, lanzar error
+      if (error) {
         console.error("Error checking users:", error);
         return;
       }
 
       // Si la tabla está vacía, insertar usuarios por defecto
-      if (count === 0 || !data || data.length === 0) {
+      if (!existingUsers || existingUsers.length === 0) {
         console.log("Seeding default users to Supabase...");
-        const { error: insertError } = await supabase
+        const { data: insertedUsers, error: insertError } = await supabase
           .from('users')
-          .insert(DEFAULT_USERS);
+          .insert(DEFAULT_USERS)
+          .select();
 
         if (insertError) {
           console.error("Error seeding users:", insertError);
         } else {
-          console.log("Default users seeded successfully");
+          console.log("Default users seeded successfully:", insertedUsers);
+          // Actualizar la lista de usuarios con los datos insertados
+          if (insertedUsers) {
+            setUsersList(insertedUsers as User[]);
+          }
         }
       }
     } catch (e) {
