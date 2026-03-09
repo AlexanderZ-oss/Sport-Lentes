@@ -14,7 +14,7 @@ const Users: React.FC = () => {
         verifyCode: ''
     });
 
-    const handleAddUser = (e: React.FormEvent) => {
+    const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Security check for registration code
@@ -23,9 +23,19 @@ const Users: React.FC = () => {
             return;
         }
 
-        addUser({ name: newUser.name, username: newUser.username, password: newUser.password, role: newUser.role, status: 'active' });
-        setIsAdding(false);
-        setNewUser({ name: '', username: '', password: '', role: 'employee', verifyCode: '' });
+        try {
+            await addUser({
+                name: newUser.name,
+                username: newUser.username,
+                password: newUser.password,
+                role: newUser.role,
+                status: 'active'
+            });
+            setIsAdding(false);
+            setNewUser({ name: '', username: '', password: '', role: 'employee', verifyCode: '' });
+        } catch (error: any) {
+            alert(`❌ Error al crear usuario: ${error.message || 'Error desconocido'}`);
+        }
     };
 
     const handleUpdateUser = async (e: React.FormEvent) => {
@@ -181,66 +191,75 @@ const Users: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {usersList.map(u => (
-                            <tr key={u.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: '0.3s' }}>
-                                <td style={{ padding: '1.2rem', fontWeight: 'bold' }}>{u.name}</td>
-                                <td style={{ padding: '1.2rem' }}>{u.username}</td>
-                                <td style={{ padding: '1.2rem' }}>
-                                    <span style={{
-                                        padding: '4px 10px',
-                                        borderRadius: '20px',
-                                        fontSize: '0.8rem',
-                                        background: u.role === 'admin' ? 'rgba(255,107,0,0.2)' : 'rgba(0,123,255,0.2)',
-                                        color: u.role === 'admin' ? 'var(--primary)' : 'var(--secondary)'
-                                    }}>
-                                        {u.role ? u.role.toUpperCase() : 'UNKNOWN'}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '1.2rem' }}>
-                                    <span style={{
-                                        color: u.status === 'active' ? '#44ff44' : '#ff4444',
-                                        display: 'flex', alignItems: 'center', gap: '6px'
-                                    }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: u.status === 'active' ? '#44ff44' : '#ff4444' }}></div>
-                                        {u.status === 'active' ? 'Activo' : 'Suspendido'}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '1.2rem' }}>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                            onClick={() => setEditingUser(u)}
-                                            style={{ background: 'var(--surface-hover)', color: 'white', border: '1px solid var(--glass-border)', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
-                                        >
-                                            ✏️ Editar
-                                        </button>
-                                        <button
-                                            onClick={() => toggleUserStatus(u.id)}
-                                            style={{
-                                                background: 'var(--surface-hover)',
-                                                color: u.status === 'active' ? '#ffaa00' : '#44ff44',
-                                                border: '1px solid var(--glass-border)',
-                                                padding: '6px 12px', borderRadius: '6px', cursor: 'pointer'
-                                            }}
-                                        >
-                                            {u.status === 'active' ? 'Suspender' : 'Activar'}
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                if (confirm('¿Estás seguro de eliminar este usuario?')) deleteUser(u.id);
-                                            }}
-                                            style={{
-                                                background: 'rgba(255,68,68,0.1)',
-                                                color: '#ff4444',
-                                                border: '1px solid rgba(255,68,68,0.3)',
-                                                padding: '6px 12px', borderRadius: '6px', cursor: 'pointer'
-                                            }}
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </div>
+                        {usersList.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No hay usuarios registrados o hay un error de conexión.
                                 </td>
                             </tr>
-                        ))}
+                        ) : (
+                            usersList.map(u => (
+                                <tr key={u.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: '0.3s' }}>
+                                    <td style={{ padding: '1.2rem', fontWeight: 'bold' }}>{u.name}</td>
+                                    <td style={{ padding: '1.2rem' }}>{u.username}</td>
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <span style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.8rem',
+                                            background: u.role === 'admin' ? 'rgba(255,107,0,0.2)' : 'rgba(0,123,255,0.2)',
+                                            color: u.role === 'admin' ? 'var(--primary)' : 'var(--secondary)',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            {u.role === 'admin' ? 'ADMINISTRADOR' : 'EMPLEADO'}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <span style={{
+                                            color: u.status === 'active' ? '#44ff44' : '#ff4444',
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: u.status === 'active' ? '#44ff44' : '#ff4444' }}></div>
+                                            {u.status === 'active' ? 'ACTIVO' : 'SUSPENDIDO'}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button
+                                                onClick={() => setEditingUser(u)}
+                                                style={{ background: 'var(--surface-hover)', color: 'white', border: '1px solid var(--glass-border)', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                                            >
+                                                ✏️ Editar
+                                            </button>
+                                            <button
+                                                onClick={() => toggleUserStatus(u.id)}
+                                                style={{
+                                                    background: 'var(--surface-hover)',
+                                                    color: u.status === 'active' ? '#ffaa00' : '#44ff44',
+                                                    border: '1px solid var(--glass-border)',
+                                                    padding: '6px 12px', borderRadius: '6px', cursor: 'pointer'
+                                                }}
+                                            >
+                                                {u.status === 'active' ? 'Suspender' : 'Activar'}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('¿Estás seguro de eliminar este usuario?')) deleteUser(u.id);
+                                                }}
+                                                style={{
+                                                    background: 'rgba(255,68,68,0.1)',
+                                                    color: '#ff4444',
+                                                    border: '1px solid rgba(255,68,68,0.3)',
+                                                    padding: '6px 12px', borderRadius: '6px', cursor: 'pointer'
+                                                }}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )))}
                     </tbody>
                 </table>
             </div>

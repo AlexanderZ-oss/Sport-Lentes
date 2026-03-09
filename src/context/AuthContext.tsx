@@ -32,9 +32,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [usersList, setUsersList] = useState<User[]>([]);
+  const [usersList, setUsersList] = useState<User[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.USERS_DB);
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isAuthOnline, setIsAuthOnline] = useState(false);
   const [hasCheckedInitialUsers, setHasCheckedInitialUsers] = useState(false);
+
+  // Persistence for usersList
+  useEffect(() => {
+    if (usersList.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(usersList));
+    }
+  }, [usersList]);
 
   useEffect(() => {
     // 1. Load Session from LocalStorage
