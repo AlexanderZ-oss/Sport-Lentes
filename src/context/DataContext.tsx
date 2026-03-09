@@ -133,7 +133,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let logsChannel: RealtimeChannel | null = null;
         let configChannel: RealtimeChannel | null = null;
 
-        const initializeData = async () => {
+        const initializeData = async (retry = 0) => {
             try {
                 setIsDataLoading(true);
                 setConnectionStatus('syncing');
@@ -212,8 +212,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setSyncError(null);
             } catch (error: any) {
                 console.error('Error loading data:', error);
-                setSyncError(error.message);
+
+                // Manejo específico de Failed to fetch
+                if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+                    setSyncError('No se pudo conectar con el servidor. Trabajando en modo local (Offline).');
+                } else {
+                    setSyncError(error.message);
+                }
+
                 setConnectionStatus('offline');
+
+                // Reintento exponencial si es error de red
+                if (retry < 3 && (error.message === 'Failed to fetch' || error.status === 503)) {
+                    const timeout = Math.pow(2, retry) * 1000;
+                    setTimeout(() => initializeData(retry + 1), timeout);
+                }
             } finally {
                 setIsDataLoading(false);
             }

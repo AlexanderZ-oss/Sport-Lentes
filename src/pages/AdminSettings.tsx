@@ -60,13 +60,17 @@ const AdminSettings: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Test connection error:", error);
-            const errorMsg = error.message || 'No se pudo contactar con la base de datos.';
+            let errorMsg = error.message || 'No se pudo contactar con la base de datos.';
+
+            if (errorMsg === 'Failed to fetch' || error.name === 'TypeError') {
+                errorMsg = 'Error de red (Failed to fetch). Es posible que el proyecto de Supabase esté PAUSADO por inactividad. Por favor, inicia sesión en supabase.com y reactiva el proyecto.';
+            }
 
             if (retryCount < 3 && autoReconnect) {
                 setTestResult({ success: false, message: `⚠️ Reintentando conexión... (${retryCount + 1}/3)` });
                 setTimeout(() => testConnection(retryCount + 1), 2000);
             } else {
-                setTestResult({ success: false, message: '❌ Error de Conexión: ' + errorMsg });
+                setTestResult({ success: false, message: '❌ ' + errorMsg });
                 setAutoReconnect(false);
             }
         } finally {

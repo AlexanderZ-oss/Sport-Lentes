@@ -60,8 +60,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (error) {
           console.error("Error loading users from Supabase:", error);
+
+          // Si es un error de red, informar pero permitir uso local
+          if (error.message === 'Failed to fetch' || (error as any).name === 'TypeError') {
+            console.warn("Red inalcanzable, operando con datos locales.");
+          }
+
           setIsAuthOnline(false);
-          // Intentar seed aunque haya error (podría ser tabla vacía)
+          // Intentar seed aunque haya error (podría ser tabla vacía o caída)
           if (!hasCheckedInitialUsers) {
             setHasCheckedInitialUsers(true);
             await seedUsers();
@@ -84,9 +90,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setHasCheckedInitialUsers(true);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Auth initialization error", error);
         setIsAuthOnline(false);
+        // Fallback a locales
+        setHasCheckedInitialUsers(true);
       } finally {
         setIsLoading(false);
       }
